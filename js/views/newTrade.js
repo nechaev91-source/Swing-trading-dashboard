@@ -191,6 +191,7 @@ export async function renderNewTrade(root) {
       volume_ok: ["Volume (40%+ above avg)", detail.volume],
       spy_above_50ma: ["S&P 500 trend", detail.spy],
       near_high: ["52-week high proximity", detail["52w_high"]],
+      rs_near_high: ["Relative Strength at new highs", detail.rs],
       sector_above_50ma: [sectorLabel, detail.sector],
       no_earnings_3w: ["No earnings within 3 weeks", detail.earnings],
     };

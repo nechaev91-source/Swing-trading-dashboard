@@ -201,16 +201,39 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
     } catch { /* ignore */ }
   }
 
-  // SPY trend
+  // SPY trend — fetch ~1 year once, reuse for both the 50-day MA and RS line
+  let spySeries = null;
   try {
-    const spy = await dailySeries("SPY", 55);
-    const r = isAbove50ma(spy);
+    spySeries = await dailySeries("SPY", 260);
+    const r = isAbove50ma(spySeries);
     if (r) {
       signals.spy_above_50ma = r.ok;
       detail.spy = `SPY $${r.last.toFixed(2)} vs 50MA $${r.ma50.toFixed(2)} (${r.ok ? "above" : "below"})`;
     }
   } catch (e) {
     detail.spy_error = e.message;
+  }
+
+  // Relative Strength line (stock / SPY ratio) at or near its 1-year high
+  if (spySeries && spySeries.length >= 60) {
+    try {
+      const stock = await dailySeries(symbol, 260);
+      const len = Math.min(stock.length, spySeries.length);
+      if (len >= 60) {
+        const ratio = [];
+        for (let i = 0; i < len; i++) {
+          const denom = spySeries[i].close;
+          if (denom > 0) ratio.push(stock[i].close / denom);
+        }
+        const current = ratio[0];
+        const maxRatio = Math.max(...ratio);
+        const pct = (current / maxRatio - 1) * 100; // 0% = at new RS high
+        signals.rs_near_high = pct >= -5;
+        detail.rs = `RS line ${pct >= -0.05 ? "at new high" : pct.toFixed(1) + "% below 1y RS high"} (vs SPY)`;
+      }
+    } catch (e) {
+      detail.rs_error = e.message;
+    }
   }
 
   // Sector ETF trend (user-selected)

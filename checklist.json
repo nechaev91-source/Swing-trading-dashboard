@@ -39,7 +39,7 @@
     "question": "Is the stock's Relative Strength line at or near new highs?",
     "category": "Relative Strength",
     "critical": false,
-    "auto_key": null
+    "auto_key": "rs_near_high"
   },
   {
     "question": "Is the stock within 5% of its 52-week high?",
