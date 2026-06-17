@@ -129,6 +129,26 @@ export async function detectSectorEtf(symbol) {
   }
 }
 
+// Days until the next earnings report (Finnhub free calendar). null if unknown.
+export async function getNextEarnings(symbol) {
+  if (!finnhubConfigured()) return null;
+  try {
+    const today = new Date();
+    const from = today.toISOString().slice(0, 10);
+    const to = new Date(today.getTime() + 120 * 86400000).toISOString().slice(0, 10);
+    const url = `https://finnhub.io/api/v1/calendar/earnings?symbol=${encodeURIComponent(symbol)}&from=${from}&to=${to}&token=${FINNHUB_KEY}`;
+    const res = await fetch(url);
+    const j = await res.json();
+    const dates = (j.earningsCalendar || []).map((e) => e.date).filter(Boolean).sort();
+    if (!dates.length) return null;
+    const next = dates[0];
+    const days = Math.round((new Date(next) - today) / 86400000);
+    return { next, days };
+  } catch {
+    return null;
+  }
+}
+
 // ── Auto-checklist signals ────────────────────────────────────────────────────
 // sectorEtf: a specific ETF the user picked, or null to auto-detect via Finnhub.
 export async function getAutoChecklistData(symbol, sectorEtf) {
@@ -209,6 +229,15 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
     detail.sector = finnhubConfigured()
       ? "Could not auto-detect sector — pick one manually to check its trend"
       : "Pick a sector ETF to check its trend (or add a Finnhub key for auto-detect)";
+  }
+
+  // Earnings within 3 weeks (Finnhub)
+  const earn = await getNextEarnings(symbol);
+  if (earn) {
+    signals.no_earnings_3w = earn.days > 21;
+    detail.earnings = `Next earnings in ${earn.days} days (${earn.next})`;
+  } else if (finnhubConfigured()) {
+    detail.earnings = "No earnings scheduled in the next ~4 months";
   }
 
   return { signals, detail };

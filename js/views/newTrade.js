@@ -192,6 +192,7 @@ export async function renderNewTrade(root) {
       spy_above_50ma: ["S&P 500 trend", detail.spy],
       near_high: ["52-week high proximity", detail["52w_high"]],
       sector_above_50ma: [sectorLabel, detail.sector],
+      no_earnings_3w: ["No earnings within 3 weeks", detail.earnings],
     };
     let html = `<div class="section-title" style="margin-top:6px">Auto-detected</div>`;
     for (const [key, [label, det]] of Object.entries(labelMap)) {
