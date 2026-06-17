@@ -96,6 +96,7 @@ async function dailySeries(symbol, outputsize = 60) {
     outputsize,
   });
   const vals = (j.values || []).map((v) => ({
+    datetime: v.datetime,
     close: parseFloat(v.close),
     volume: parseFloat(v.volume),
   }));
@@ -166,7 +167,17 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
     }
   }
 
-  // Quote: 52-week high, volume vs average volume
+  // Fetch the stock's ~1-year daily history once — used for the RS line below.
+  let stockSeries = null;
+  try {
+    stockSeries = await dailySeries(symbol, 260);
+  } catch (e) {
+    detail.series_error = e.message;
+  }
+
+  // Quote: 52-week high proximity.
+  // (Volume is intentionally NOT auto-checked — the free intraday feed is
+  //  delayed and doesn't match TradingView, so volume stays a manual item.)
   try {
     const q = await apiGet("/quote", { symbol });
     const close = parseFloat(q.close);
@@ -176,29 +187,8 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
       signals.near_high = pct >= -5;
       detail["52w_high"] = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% from 52-wk high ($${high52.toFixed(2)})`;
     }
-    const vol = parseFloat(q.volume);
-    const avgVol = parseFloat(q.average_volume);
-    if (isFinite(vol) && isFinite(avgVol) && avgVol > 0) {
-      const ratio = vol / avgVol;
-      signals.volume_ok = ratio >= 1.4;
-      detail.volume = `${ratio.toFixed(1)}x avg (${vol.toLocaleString()} vs ${Math.round(avgVol).toLocaleString()})`;
-    }
   } catch (e) {
     detail.quote_error = e.message;
-  }
-
-  // Volume fallback via candles if quote didn't provide it
-  if (signals.volume_ok === undefined) {
-    try {
-      const s = await dailySeries(symbol, 51);
-      if (s.length >= 50) {
-        const lastVol = s[0].volume;
-        const avg50 = s.slice(1, 51).reduce((a, v) => a + v.volume, 0) / 50;
-        const ratio = avg50 > 0 ? lastVol / avg50 : 0;
-        signals.volume_ok = ratio >= 1.4;
-        detail.volume = `${ratio.toFixed(1)}x avg-50`;
-      }
-    } catch { /* ignore */ }
   }
 
   // SPY trend — fetch ~1 year once, reuse for both the 50-day MA and RS line
@@ -215,15 +205,14 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
   }
 
   // Relative Strength line (stock / SPY ratio) at or near its 1-year high
-  if (spySeries && spySeries.length >= 60) {
+  if (spySeries && spySeries.length >= 60 && stockSeries && stockSeries.length >= 60) {
     try {
-      const stock = await dailySeries(symbol, 260);
-      const len = Math.min(stock.length, spySeries.length);
+      const len = Math.min(stockSeries.length, spySeries.length);
       if (len >= 60) {
         const ratio = [];
         for (let i = 0; i < len; i++) {
           const denom = spySeries[i].close;
-          if (denom > 0) ratio.push(stock[i].close / denom);
+          if (denom > 0) ratio.push(stockSeries[i].close / denom);
         }
         const current = ratio[0];
         const maxRatio = Math.max(...ratio);

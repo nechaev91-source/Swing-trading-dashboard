@@ -24,10 +24,10 @@
     "auto_key": null
   },
   {
-    "question": "Is breakout volume 40%+ above the 50-day average?",
+    "question": "Is breakout volume 40%+ above the 50-day average? (check on TradingView)",
     "category": "Volume",
     "critical": true,
-    "auto_key": "volume_ok"
+    "auto_key": null
   },
   {
     "question": "Is the S&P 500 in a confirmed uptrend (above 50-day MA)?",

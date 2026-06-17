@@ -188,7 +188,6 @@ export async function renderNewTrade(root) {
 
     const sectorLabel = detail.sector_name ? `Sector — ${detail.sector_name}` : "Sector ETF trend";
     const labelMap = {
-      volume_ok: ["Volume (40%+ above avg)", detail.volume],
       spy_above_50ma: ["S&P 500 trend", detail.spy],
       near_high: ["52-week high proximity", detail["52w_high"]],
       rs_near_high: ["Relative Strength at new highs", detail.rs],
