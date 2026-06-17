@@ -1,0 +1,44 @@
+name: Daily Trading Digest
+
+on:
+  schedule:
+    # Mon–Fri at 23:30 UTC = 7:30 PM ET (market closed + data settled)
+    # GitHub cron is UTC. ET is UTC-4 in summer (EDT), UTC-5 in winter (EST).
+    # 23:30 UTC covers both: 7:30 PM EDT / 6:30 PM EST — always after close.
+    - cron: '30 23 * * 1-5'
+  workflow_dispatch:
+    # Allows manual trigger from GitHub UI (Actions tab → Run workflow)
+    # Use this to test without waiting for the scheduled time.
+    inputs:
+      strategy:
+        description: 'Strategy to scan (trend or meanrev)'
+        required: false
+        default: 'trend'
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run daily digest
+        working-directory: scripts
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          STRATEGY="${{ github.event.inputs.strategy || 'trend' }}"
+          python notify.py "$STRATEGY"
