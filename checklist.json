@@ -1,0 +1,62 @@
+[
+  {
+    "question": "Is a clear base / consolidation pattern visible (min 3 weeks)?",
+    "category": "Pattern",
+    "critical": true,
+    "auto_key": null
+  },
+  {
+    "question": "Is the pivot point (breakout level) clearly defined?",
+    "category": "Pattern",
+    "critical": true,
+    "auto_key": null
+  },
+  {
+    "question": "Is the handle tight and forming in the upper half of the base?",
+    "category": "Pattern",
+    "critical": false,
+    "auto_key": null
+  },
+  {
+    "question": "Is price breaking out above the pivot on today's candle?",
+    "category": "Entry Timing",
+    "critical": true,
+    "auto_key": null
+  },
+  {
+    "question": "Is breakout volume 40%+ above the 50-day average?",
+    "category": "Volume",
+    "critical": true,
+    "auto_key": "volume_ok"
+  },
+  {
+    "question": "Is the S&P 500 in a confirmed uptrend (above 50-day MA)?",
+    "category": "Market Context",
+    "critical": false,
+    "auto_key": "spy_above_50ma"
+  },
+  {
+    "question": "Is the stock's Relative Strength line at or near new highs?",
+    "category": "Relative Strength",
+    "critical": false,
+    "auto_key": null
+  },
+  {
+    "question": "Is the stock within 5% of its 52-week high?",
+    "category": "Price Position",
+    "critical": false,
+    "auto_key": "near_high"
+  },
+  {
+    "question": "Is the sector ETF in an uptrend (above 50-day MA)?",
+    "category": "Market Context",
+    "critical": false,
+    "auto_key": "sector_above_50ma"
+  },
+  {
+    "question": "No earnings report within the next 3 weeks?",
+    "category": "Risk",
+    "critical": false,
+    "auto_key": "no_earnings_3w"
+  }
+]
