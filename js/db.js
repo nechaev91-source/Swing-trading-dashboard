@@ -21,9 +21,11 @@ export async function addTrade(t) {
     entry_price: t.entry_price,
     shares: t.shares,
     stop_loss: t.stop_loss,
-    target: t.target,
-    checklist_score: t.checklist_score,
+    current_stop: t.current_stop ?? t.stop_loss,   // trail tracking
+    target: t.target ?? null,
+    checklist_score: t.checklist_score ?? null,
     setup_notes: t.setup_notes || "",
+    strategy: t.strategy || "breakout",
     exit_price: null,
     exit_date: null,
     exit_notes: null,
@@ -31,6 +33,12 @@ export async function addTrade(t) {
     chart_url: null,
     created_at: Date.now(),
   });
+}
+
+// ── Update trailing stop ─────────────────────────────────────────────────────
+export async function updateTradeStop(id, newStop) {
+  const ref = doc(db, "users", currentUser().uid, "trades", id);
+  await updateDoc(ref, { current_stop: newStop });
 }
 
 // ── Close ────────────────────────────────────────────────────────────────────
