@@ -116,7 +116,8 @@ def parse_ideas(items, sp500, require_keyword=False):
             "editors_pick": editors_pick,
             "summary": (it.get("description") or "").strip().replace("\n", " ")[:160],
             "chart_url": it.get("chart_url", ""),
-            "image": f"https://s3.tradingview.com/{img}_mid.webp" if img else "",
+            # TV stores snapshots under a 1-letter subdir = lowercase first char of the id
+            "image": f"https://s3.tradingview.com/{img[0].lower()}/{img}_mid.webp" if img else "",
             "created_at": it.get("created_at", ""),
             # engagement-weighted; Premium author + editor's pick add credibility
             "score": likes + 2 * comments + (5 if premium else 0) + (15 if editors_pick else 0),
