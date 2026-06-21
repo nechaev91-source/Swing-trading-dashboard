@@ -388,6 +388,8 @@ canvas { max-width: 100%; }
   font-size: 14px; font-family: inherit;
 }
 .stop-input:focus { outline: none; border-color: var(--accent); }
+.pos-edit { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.pos-actions { margin-top: 10px; }
 
 /* ── Mobile ──────────────────────────────────────────────── */
 @media (max-width: 820px) {

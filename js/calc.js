@@ -34,28 +34,29 @@ export function realizedPnl(side, entry, exit, shares) {
   return side === "Long" ? (exit - entry) * shares : (entry - exit) * shares;
 }
 
-// R-multiple achieved (result / initial risk)
+// R-multiple achieved (result / initial risk). Returns 0 if there's no stop.
 export function rMultiple(side, entry, exit, stop, shares) {
   const pnl = realizedPnl(side, entry, exit, shares);
-  const risk = Math.abs(entry - stop) * shares;
+  const risk = (stop != null && isFinite(stop)) ? Math.abs(entry - stop) * shares : 0;
   return risk !== 0 ? pnl / risk : 0;
 }
 
 // Live (open) position P&L and R, plus stop/target flags
 export function openPositionStats(side, entry, current, stop, target, shares) {
+  const hasStop = stop != null && isFinite(stop);
   let pnl, r, atStop, atTarget;
   if (side === "Long") {
     pnl = (current - entry) * shares;
-    r = entry - stop !== 0 ? (current - entry) / (entry - stop) : 0;
-    atStop = current <= stop;
-    atTarget = current >= target;
+    r = hasStop && entry - stop !== 0 ? (current - entry) / (entry - stop) : 0;
+    atStop = hasStop && current <= stop;
+    atTarget = target != null && isFinite(target) && current >= target;
   } else {
     pnl = (entry - current) * shares;
-    r = stop - entry !== 0 ? (entry - current) / (stop - entry) : 0;
-    atStop = current >= stop;
-    atTarget = current <= target;
+    r = hasStop && stop - entry !== 0 ? (entry - current) / (stop - entry) : 0;
+    atStop = hasStop && current >= stop;
+    atTarget = target != null && isFinite(target) && current <= target;
   }
-  const risk = Math.abs(entry - stop) * shares;
+  const risk = hasStop ? Math.abs(entry - stop) * shares : 0;
   return { pnl, r, atStop, atTarget, risk };
 }
 

@@ -444,7 +444,7 @@ export async function renderNewTrade(root) {
           <div class="field"><label>Shares</label><input type="number" id="mn-shares" value="10" step="1" /></div>
         </div>
         <div class="field-row">
-          <div class="field"><label>Stop Loss $</label><input type="number" id="mn-stop" value="95" step="0.01" /></div>
+          <div class="field"><label>Stop Loss $ (optional)</label><input type="number" id="mn-stop" placeholder="—" step="0.01" /></div>
           <div class="field"><label>Target $ (optional)</label><input type="number" id="mn-target" placeholder="—" step="0.01" /></div>
         </div>
         <div class="field"><label>Notes (optional)</label><textarea id="mn-notes" placeholder="Why this trade?"></textarea></div>
@@ -486,14 +486,15 @@ export async function renderNewTrade(root) {
         <div class="calc-item"><div class="clabel">RISK $</div><div class="cvalue red">${riskDollar ? "-$" + riskDollar.toFixed(2) : "—"}</div></div>
         <div class="calc-item"><div class="clabel">RISK % OF PF</div><div class="cvalue">${riskPct ? riskPct.toFixed(1) + "%" : "—"}</div></div>
         <div class="calc-item"><div class="clabel">R:R</div><div class="cvalue">${rr > 0 ? "1:" + rr.toFixed(2) : "—"}</div></div>`;
-      const ok = $("mn-symbol").value.trim() && entry > 0 && shares > 0 && stop > 0;
+      const ok = $("mn-symbol").value.trim() && entry > 0 && shares > 0;
       $("mn-enter").disabled = !ok;
-      $("mn-status").innerHTML = ok ? "" : `<div class="alert alert-warn">Fill ticker, entry, shares and stop.</div>`;
+      $("mn-status").innerHTML = ok ? "" : `<div class="alert alert-warn">Fill ticker, entry and shares.</div>`;
     }
     ["mn-symbol", "mn-side", "mn-entry", "mn-shares", "mn-stop", "mn-target"].forEach((id) => $(id).addEventListener("input", recompute));
 
     $("mn-enter").addEventListener("click", async () => {
       const target = parseFloat($("mn-target").value);
+      const stop = parseFloat($("mn-stop").value);
       showLoader();
       try {
         const ref = await addTrade({
@@ -502,7 +503,7 @@ export async function renderNewTrade(root) {
           entry_date: $("mn-date").value,
           entry_price: parseFloat($("mn-entry").value),
           shares: parseFloat($("mn-shares").value),
-          stop_loss: parseFloat($("mn-stop").value),
+          stop_loss: isFinite(stop) && stop > 0 ? stop : null,
           target: isFinite(target) && target > 0 ? target : null,
           checklist_score: null,
           grade: null,

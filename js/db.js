@@ -42,6 +42,12 @@ export async function updateTradeStop(id, newStop) {
   await updateDoc(ref, { current_stop: newStop });
 }
 
+// ── Generic field update (fix a wrong value) ─────────────────────────────────
+export async function updateTrade(id, fields) {
+  const ref = doc(db, "users", currentUser().uid, "trades", id);
+  await updateDoc(ref, fields);
+}
+
 // ── Close ────────────────────────────────────────────────────────────────────
 export async function closeTrade(id, exitPrice, exitDate, exitNotes) {
   const ref = doc(db, "users", currentUser().uid, "trades", id);
