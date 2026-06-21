@@ -98,7 +98,6 @@ export async function renderNewTrade(root) {
             <div class="section-title">Checklist</div>
             ${subToggle}
             <button id="autofill" class="btn btn-secondary btn-sm" style="margin-bottom:12px">⚡ Auto-fill from Market Data</button>
-            <div id="auto-signals"></div>
             <div id="checklist-items"></div>
           </div>
           <div class="card">
@@ -125,10 +124,10 @@ export async function renderNewTrade(root) {
         return `<div class="chk-item">
           <input type="checkbox" id="chk_${i}" />
           <div class="chk-text"><div class="chk-q">${esc(item.question)}${tags.join("")}
-            <span class="auto-result" id="ar_${i}"></span></div></div>
+            <span class="auto-result" id="ar_${i}"></span></div>
+            <div class="chk-detail sdetail" id="cd_${i}"></div></div>
         </div>`;
       }).join("");
-      $("auto-signals").innerHTML = "";
       items.forEach((_, i) => $(`chk_${i}`).addEventListener("change", recompute));
       recompute();
     }
@@ -244,33 +243,27 @@ export async function renderNewTrade(root) {
 
       const { signals, detail } = result;
 
-      // Tick checkboxes and mark each auto item with a green ✓ or red ✗
+      // Tick each auto item, mark green ✓ / red ✗, and show its detail inline
       items.forEach((item, i) => {
         const ar = $(`ar_${i}`);
+        const cd = $(`cd_${i}`);
         if (item.auto_key && item.auto_key in signals) {
           const ok = signals[item.auto_key];
           $(`chk_${i}`).checked = ok;
           ar.textContent = ok ? "✓" : "✗";
           ar.className = "auto-result " + (ok ? "pass" : "fail");
+          const [, field] = AUTO_LABELS[item.auto_key] || [null, null];
+          let det = field ? detail[field] : "";
+          if (item.auto_key === "sector_above_50ma" && detail.sector_name) {
+            det = detail.sector_name + (det ? " · " + det : "");
+          }
+          cd.textContent = det || "";
         } else if (item.auto_key) {
           ar.textContent = "—";
           ar.className = "auto-result muted";
+          cd.textContent = "data unavailable";
         }
       });
-
-      // Summary panel for the auto items used by this checklist
-      let html = `<div class="section-title" style="margin-top:6px">Auto-detected</div>`;
-      const usedKeys = items.map((it) => it.auto_key).filter(Boolean);
-      for (const key of usedKeys) {
-        if (!(key in signals)) continue;
-        const ok = signals[key];
-        let [label, field] = AUTO_LABELS[key] || [key, null];
-        let det = field ? detail[field] : "";
-        if (key === "sector_above_50ma" && detail.sector_name) label = `Sector — ${detail.sector_name}`;
-        html += `<div class="auto-signal"><span>${ok ? "✅" : "❌"}</span>
-          <div><div>${label}</div><div class="sdetail">${esc(det || "")}</div></div></div>`;
-      }
-      $("auto-signals").innerHTML = html;
       recompute();
       toast("Auto-fill complete", "success");
     });

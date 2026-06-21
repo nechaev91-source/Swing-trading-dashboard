@@ -234,6 +234,8 @@ canvas { max-width: 100%; }
 .sub-tab.active { background: rgba(0,212,170,0.12); color: var(--accent); border-color: var(--accent); }
 
 /* ── Auto-result marker on checklist items ───────────────── */
+.chk-detail { margin-top: 3px; }
+.chk-detail:empty { display: none; }
 .auto-result { font-weight: 700; margin-left: 8px; font-size: 14px; }
 .auto-result.pass { color: var(--green); }
 .auto-result.fail { color: var(--red); }
