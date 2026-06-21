@@ -1,29 +1,6 @@
 import { getAllTrades, closeTrade, deleteTrade, saveChartUrl } from "../db.js";
 import { realizedPnl, rMultiple } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, toast, esc } from "../ui.js";
-
-// Resize + compress an image File to a JPEG data URL that stays small enough
-// to live inside a Firestore document (1 MB limit). No cloud Storage needed.
-function compressImage(file, maxWidth = 1200, quality = 0.7) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const img = new Image();
-      img.onload = () => {
-        const scale = Math.min(1, maxWidth / img.width);
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width * scale);
-        canvas.height = Math.round(img.height * scale);
-        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", quality));
-      };
-      img.onerror = reject;
-      img.src = reader.result;
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+import { fmt, colorClass, showLoader, hideLoader, toast, esc, compressImage } from "../ui.js";
 
 export async function renderJournal(root) {
   root.innerHTML = `

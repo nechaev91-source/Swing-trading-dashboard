@@ -24,6 +24,7 @@ export async function addTrade(t) {
     current_stop: t.current_stop ?? t.stop_loss,   // trail tracking
     target: t.target ?? null,
     checklist_score: t.checklist_score ?? null,
+    grade: t.grade ?? null,
     setup_notes: t.setup_notes || "",
     strategy: t.strategy || "breakout",
     exit_price: null,

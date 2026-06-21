@@ -35,12 +35,35 @@ export function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-// Load checklist.json once and cache it
-let _checklist = null;
-export async function getChecklist() {
-  if (!_checklist) {
-    const res = await fetch("checklist.json");
-    _checklist = await res.json();
+// Load strategies.json once and cache it
+let _strategies = null;
+export async function getStrategies() {
+  if (!_strategies) {
+    const res = await fetch("strategies.json");
+    _strategies = await res.json();
   }
-  return _checklist;
+  return _strategies;
+}
+
+// Resize + compress an image File to a JPEG data URL small enough to live inside
+// a Firestore document (1 MB limit). Shared by New Trade and Journal.
+export function compressImage(file, maxWidth = 1200, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

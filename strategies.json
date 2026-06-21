@@ -1,0 +1,58 @@
+{
+  "breakout": {
+    "label": "📈 Breakout",
+    "sector": true,
+    "checklists": [
+      {
+        "name": "Cup & Handle",
+        "items": [
+          { "question": "Is a clear base / consolidation pattern visible (min 3 weeks)?", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "Is the pivot point (breakout level) clearly defined?", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "Is the handle tight and forming in the upper half of the base?", "category": "Pattern", "critical": false, "auto_key": null },
+          { "question": "Is price breaking out above the pivot on today's candle?", "category": "Entry Timing", "critical": true, "auto_key": null },
+          { "question": "Is breakout volume 40%+ above the 50-day average? (check on TradingView)", "category": "Volume", "critical": true, "auto_key": null },
+          { "question": "Is the S&P 500 in a confirmed uptrend (above 50-day MA)?", "category": "Market Context", "critical": false, "auto_key": "spy_above_50ma" },
+          { "question": "Is the stock's Relative Strength line at or near new highs?", "category": "Relative Strength", "critical": false, "auto_key": "rs_near_high" },
+          { "question": "Is the stock within 5% of its 52-week high?", "category": "Price Position", "critical": false, "auto_key": "near_high" },
+          { "question": "Is the sector ETF in an uptrend (above 50-day MA)?", "category": "Market Context", "critical": false, "auto_key": "sector_above_50ma" },
+          { "question": "No earnings report within the next 3 weeks?", "category": "Risk", "critical": false, "auto_key": "no_earnings_3w" }
+        ]
+      }
+    ]
+  },
+  "trend-line": {
+    "label": "📐 Trend Line",
+    "sector": false,
+    "checklists": [
+      {
+        "name": "Breakout Buy",
+        "items": [
+          { "question": "SPY is trading above a rising 200 SMA.", "category": "Climate", "critical": true, "auto_key": "spy_above_200ma_rising" },
+          { "question": "The stock is trading above a rising 200 SMA.", "category": "Climate", "critical": true, "auto_key": "stock_above_200ma_rising" },
+          { "question": "Momentum stack: Price > 50 SMA > 200 SMA (50 SMA rising).", "category": "Climate", "critical": false, "auto_key": "stock_momentum_stack" },
+          { "question": "Extension limit: price is relatively close to the 50 SMA (not parabolic).", "category": "Climate", "critical": false, "auto_key": null },
+          { "question": "Relative Strength: clear RS vs. the SPY.", "category": "Relative Strength", "critical": false, "auto_key": null },
+          { "question": "Ascending support: uptrend line of higher lows with 3+ touchpoints (or forming 3rd).", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "Descending resistance: downtrend line of lower highs with 2-3 touchpoints.", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "The 5% Rule: entry (just above the downtrend line) is max 5% from the ascending support.", "category": "Execution", "critical": false, "auto_key": null },
+          { "question": "RVOL at breakout is > 1.5 (50%+ above average pace for the time of day).", "category": "Execution", "critical": true, "auto_key": null }
+        ]
+      },
+      {
+        "name": "Support Bounce",
+        "items": [
+          { "question": "SPY is trading above a rising 200 SMA.", "category": "Climate", "critical": true, "auto_key": "spy_above_200ma_rising" },
+          { "question": "The stock is trading above a rising 200 SMA.", "category": "Climate", "critical": true, "auto_key": "stock_above_200ma_rising" },
+          { "question": "The stock is trading above a rising 50 SMA.", "category": "Climate", "critical": false, "auto_key": "stock_above_50ma_rising" },
+          { "question": "Relative Strength: resilience or uptrend in RS vs. the SPY.", "category": "Relative Strength", "critical": false, "auto_key": null },
+          { "question": "Ascending support: established uptrend line with exactly 2 prior touchpoints.", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "The setup: price is pulling back to touch the line for the 3rd time.", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "Volume dry-up: selling volume during the pullback is noticeably below average.", "category": "Volume", "critical": false, "auto_key": null },
+          { "question": "The 5% Rule: stop just below the trend line keeps total distance under 5%.", "category": "Execution", "critical": false, "auto_key": null },
+          { "question": "Candle shape: clear bullish reversal candle on the line (hammer / engulfing / doji+green).", "category": "Execution", "critical": true, "auto_key": null },
+          { "question": "RVOL on the bounce day is > 1.5 (buyers aggressively defending the line).", "category": "Execution", "critical": false, "auto_key": null }
+        ]
+      }
+    ]
+  }
+}

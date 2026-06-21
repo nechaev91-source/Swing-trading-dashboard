@@ -104,7 +104,7 @@ js/calc.js            Position sizing + R math (pure)
 js/ui.js              Loader, toast, formatting helpers
 js/app.js             Auth gate + hash router
 js/views/*.js         One module per screen
-checklist.json        Breakout checklist (editable)
+strategies.json       Strategies + their checklists (editable)
 firestore.rules       Firestore security rules
 manifest.json         PWA manifest
 ```

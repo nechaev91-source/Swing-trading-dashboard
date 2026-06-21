@@ -27,7 +27,7 @@ export async function renderSettings(root) {
 
     <div class="card">
       <div class="section-title">Checklist</div>
-      <div class="hint">The breakout checklist is defined in <code>checklist.json</code>. Edit that file in the repo to add, remove, or reorder items, then redeploy.</div>
+      <div class="hint">Strategies and their checklists are defined in <code>strategies.json</code>. Edit that file in the repo to add, remove, or reorder items, then redeploy.</div>
     </div>
   `;
 

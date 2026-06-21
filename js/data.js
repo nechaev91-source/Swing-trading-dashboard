@@ -110,6 +110,21 @@ function isAbove50ma(series) {
   return { ok: last > ma50, last, ma50 };
 }
 
+// Simple moving average ending `offset` bars back (series is newest-first).
+function smaAt(series, period, offset = 0) {
+  if (!series || series.length < period + offset) return null;
+  let s = 0;
+  for (let i = offset; i < offset + period; i++) s += series[i].close;
+  return s / period;
+}
+
+// Is the SMA rising vs. ~`lookback` trading days ago?
+function smaRising(series, period, lookback = 20) {
+  const now = smaAt(series, period, 0);
+  const past = smaAt(series, period, lookback);
+  return now != null && past != null ? now > past : null;
+}
+
 // Auto-detect a stock's sector ETF via Finnhub's free company-profile endpoint.
 // Returns { etf, industry } or null if unavailable / not configured.
 export function finnhubConfigured() {
@@ -152,12 +167,15 @@ export async function getNextEarnings(symbol) {
 
 // ── Auto-checklist signals ────────────────────────────────────────────────────
 // sectorEtf: a specific ETF the user picked, or null to auto-detect via Finnhub.
-export async function getAutoChecklistData(symbol, sectorEtf) {
+// opts.sector / opts.earnings: gate the extra Finnhub calls (skipped when the
+// active checklist doesn't use those items).
+export async function getAutoChecklistData(symbol, sectorEtf, opts = {}) {
+  const { sector = true, earnings = true } = opts;
   const signals = {};
   const detail = {};
 
-  // Auto-detect sector if the user didn't pick one
-  if (!sectorEtf) {
+  // Auto-detect sector if the user didn't pick one (only when needed)
+  if (sector && !sectorEtf) {
     const detected = await detectSectorEtf(symbol);
     if (detected) {
       sectorEtf = detected.etf;
@@ -191,7 +209,7 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
     detail.quote_error = e.message;
   }
 
-  // SPY trend — fetch ~1 year once, reuse for both the 50-day MA and RS line
+  // SPY trend — fetch ~1 year once, reuse for the 50-MA, 200-MA and RS line
   let spySeries = null;
   try {
     spySeries = await dailySeries("SPY", 260);
@@ -200,8 +218,35 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
       signals.spy_above_50ma = r.ok;
       detail.spy = `SPY $${r.last.toFixed(2)} vs 50MA $${r.ma50.toFixed(2)} (${r.ok ? "above" : "below"})`;
     }
+    const ma200 = smaAt(spySeries, 200), rising = smaRising(spySeries, 200);
+    if (ma200 != null && rising != null) {
+      const last = spySeries[0].close;
+      signals.spy_above_200ma_rising = last > ma200 && rising;
+      detail.spy200 = `SPY $${last.toFixed(2)} vs 200MA $${ma200.toFixed(2)} (${last > ma200 ? "above" : "below"}, ${rising ? "rising" : "falling"})`;
+    }
   } catch (e) {
     detail.spy_error = e.message;
+  }
+
+  // Stock SMA structure (200 trend, 50 trend, momentum stack) — from stockSeries
+  if (stockSeries && stockSeries.length >= 200) {
+    const last = stockSeries[0].close;
+    const ma200 = smaAt(stockSeries, 200), rising200 = smaRising(stockSeries, 200);
+    const ma50 = smaAt(stockSeries, 50), rising50 = smaRising(stockSeries, 50);
+    if (ma200 != null && rising200 != null) {
+      signals.stock_above_200ma_rising = last > ma200 && rising200;
+      detail.stock200 = `$${last.toFixed(2)} vs 200MA $${ma200.toFixed(2)} (${last > ma200 ? "above" : "below"}, ${rising200 ? "rising" : "falling"})`;
+    }
+    if (ma50 != null && rising50 != null) {
+      signals.stock_above_50ma_rising = last > ma50 && rising50;
+      detail.stock50 = `$${last.toFixed(2)} vs 50MA $${ma50.toFixed(2)} (${last > ma50 ? "above" : "below"}, ${rising50 ? "rising" : "falling"})`;
+      if (ma200 != null) {
+        signals.stock_momentum_stack = last > ma50 && ma50 > ma200 && rising50;
+        detail.stack = signals.stock_momentum_stack
+          ? "Price > 50MA > 200MA, 50MA rising"
+          : "Not stacked (need Price > 50MA > 200MA, 50 rising)";
+      }
+    }
   }
 
   // Relative Strength line (stock / SPY ratio) at or near its 1-year high
@@ -225,31 +270,35 @@ export async function getAutoChecklistData(symbol, sectorEtf) {
     }
   }
 
-  // Sector ETF trend (user-selected)
-  if (sectorEtf) {
-    try {
-      const etf = await dailySeries(sectorEtf, 55);
-      const r = isAbove50ma(etf);
-      if (r) {
-        signals.sector_above_50ma = r.ok;
-        detail.sector = `${sectorEtf} $${r.last.toFixed(2)} vs 50MA $${r.ma50.toFixed(2)} (${r.ok ? "above" : "below"})`;
+  // Sector ETF trend (user-selected or auto-detected)
+  if (sector) {
+    if (sectorEtf) {
+      try {
+        const etf = await dailySeries(sectorEtf, 55);
+        const r = isAbove50ma(etf);
+        if (r) {
+          signals.sector_above_50ma = r.ok;
+          detail.sector = `${sectorEtf} $${r.last.toFixed(2)} vs 50MA $${r.ma50.toFixed(2)} (${r.ok ? "above" : "below"})`;
+        }
+      } catch (e) {
+        detail.sector_error = e.message;
       }
-    } catch (e) {
-      detail.sector_error = e.message;
+    } else {
+      detail.sector = finnhubConfigured()
+        ? "Could not auto-detect sector — pick one manually to check its trend"
+        : "Pick a sector ETF to check its trend (or add a Finnhub key for auto-detect)";
     }
-  } else {
-    detail.sector = finnhubConfigured()
-      ? "Could not auto-detect sector — pick one manually to check its trend"
-      : "Pick a sector ETF to check its trend (or add a Finnhub key for auto-detect)";
   }
 
   // Earnings within 3 weeks (Finnhub)
-  const earn = await getNextEarnings(symbol);
-  if (earn) {
-    signals.no_earnings_3w = earn.days > 21;
-    detail.earnings = `Next earnings in ${earn.days} days (${earn.next})`;
-  } else if (finnhubConfigured()) {
-    detail.earnings = "No earnings scheduled in the next ~4 months";
+  if (earnings) {
+    const earn = await getNextEarnings(symbol);
+    if (earn) {
+      signals.no_earnings_3w = earn.days > 21;
+      detail.earnings = `Next earnings in ${earn.days} days (${earn.next})`;
+    } else if (finnhubConfigured()) {
+      detail.earnings = "No earnings scheduled in the next ~4 months";
+    }
   }
 
   return { signals, detail };

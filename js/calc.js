@@ -58,3 +58,47 @@ export function openPositionStats(side, entry, current, stop, target, shares) {
   const risk = Math.abs(entry - stop) * shares;
   return { pnl, r, atStop, atTarget, risk };
 }
+
+// Grade a setup A+ … D from its checklist + risk/reward.
+// Philosophy: CRITICAL items are gatekeepers — a missing critical caps the grade,
+// because in swing trading a missing must-have (e.g. no volume confirmation, broken
+// regime) is a real flaw no amount of nice-to-haves makes up for. R:R nudges the
+// score: a clean structure with a 3:1 reward is worth more than the same at 1.5:1.
+export function gradeSetup(items, checked, rr) {
+  let critTotal = 0, critMet = 0, nonTotal = 0, nonMet = 0;
+  items.forEach((it, i) => {
+    if (it.critical) { critTotal++; if (checked[i]) critMet++; }
+    else { nonTotal++; if (checked[i]) nonMet++; }
+  });
+  const critMissing = critTotal - critMet;
+
+  // Criticals carry double weight in the base percentage
+  const pts = critMet * 2 + nonMet;
+  const maxPts = critTotal * 2 + nonTotal;
+  let pct = maxPts > 0 ? (pts / maxPts) * 100 : 0;
+
+  // R:R modifier
+  if (rr >= 2.5) pct += 5;
+  else if (rr > 0 && rr < 1.5) pct -= 8;
+  pct = Math.max(0, Math.min(100, pct));
+
+  // Critical ceiling: each missing critical lowers the best attainable grade
+  let grade;
+  if (critMissing === 0) {
+    grade = pct >= 92 ? "A+" : pct >= 82 ? "A" : pct >= 70 ? "B" : pct >= 55 ? "C" : "D";
+  } else if (critMissing === 1) {
+    grade = pct >= 80 ? "B" : pct >= 60 ? "C" : "D";   // capped at B
+  } else {
+    grade = pct >= 60 ? "C" : "D";                      // capped at C
+  }
+
+  return { grade, pct: Math.round(pct), critMet, critTotal, nonMet, nonTotal, critMissing };
+}
+
+// Color bucket for a letter grade
+export function gradeColor(grade) {
+  if (grade === "A+" || grade === "A") return "green";
+  if (grade === "B") return "accent";
+  if (grade === "C") return "yellow";
+  return "red";
+}

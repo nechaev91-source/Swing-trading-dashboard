@@ -224,6 +224,29 @@ canvas { max-width: 100%; }
   background: var(--accent); color: #06281f; border-color: var(--accent);
 }
 
+/* ── Sub-toggle (checklists within a strategy) ───────────── */
+.sub-toggle { display: flex; gap: 6px; margin-bottom: 14px; }
+.sub-tab {
+  padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--border);
+  background: var(--bg); color: var(--muted); font-family: inherit; transition: all .15s;
+}
+.sub-tab.active { background: rgba(0,212,170,0.12); color: var(--accent); border-color: var(--accent); }
+
+/* ── Auto-result marker on checklist items ───────────────── */
+.auto-result { font-weight: 700; margin-left: 8px; font-size: 14px; }
+.auto-result.pass { color: var(--green); }
+.auto-result.fail { color: var(--red); }
+
+/* ── Setup grade box ─────────────────────────────────────── */
+.accent { color: var(--accent); }
+.grade-row { display: flex; align-items: center; gap: 16px; }
+.grade-letter {
+  font-size: 46px; font-weight: 800; line-height: 1;
+  min-width: 72px; text-align: center;
+}
+.grade-pct { font-size: 24px; font-weight: 700; }
+
 /* ── Positions view ──────────────────────────────────────── */
 .pos-card { margin-bottom: 14px; }
 .pos-header {
