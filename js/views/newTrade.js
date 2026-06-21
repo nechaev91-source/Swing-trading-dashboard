@@ -30,6 +30,7 @@ export async function renderNewTrade(root) {
   const tabs = [
     ...Object.entries(strategies).map(([id, s]) => `<button class="strat-tab" data-mode="${id}">${s.label}</button>`),
     `<button class="strat-tab" data-mode="trend-pullback">🤖 Trend-Pullback</button>`,
+    `<button class="strat-tab" data-mode="manual">📝 Manual</button>`,
   ].join("");
 
   root.innerHTML = `
@@ -48,6 +49,7 @@ export async function renderNewTrade(root) {
 
   function mount() {
     if (mode === "trend-pullback") mountTrendPullback();
+    else if (mode === "manual") mountManual();
     else mountChecklistForm(strategies[mode], mode);
   }
 
@@ -420,6 +422,104 @@ export async function renderNewTrade(root) {
     });
 
     recomputeTP();
+  }
+
+  // ── MANUAL MODE (discretionary trade, no checklist / strategy) ──────────────
+  function mountManual() {
+    const portfolio = getPortfolio();
+    document.getElementById("form-body").innerHTML = `
+      <div class="card" style="max-width:560px">
+        <div class="section-title">Manual Trade — no strategy / checklist</div>
+        <div class="alert alert-ok" style="margin-bottom:16px">
+          For discretionary trades that don't fit a developed strategy. Enter the
+          actual shares you hold. Saved under the "Manual" setup.
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Ticker Symbol</label><input id="mn-symbol" placeholder="e.g. KO" /></div>
+          <div class="field"><label>Side</label><select id="mn-side"><option>Long</option><option>Short</option></select></div>
+        </div>
+        <div class="field"><label>Entry Date</label><input type="date" id="mn-date" /></div>
+        <div class="field-row">
+          <div class="field"><label>Entry Price $</label><input type="number" id="mn-entry" value="100" step="0.01" /></div>
+          <div class="field"><label>Shares</label><input type="number" id="mn-shares" value="10" step="1" /></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Stop Loss $</label><input type="number" id="mn-stop" value="95" step="0.01" /></div>
+          <div class="field"><label>Target $ (optional)</label><input type="number" id="mn-target" placeholder="—" step="0.01" /></div>
+        </div>
+        <div class="field"><label>Notes (optional)</label><textarea id="mn-notes" placeholder="Why this trade?"></textarea></div>
+        <div class="field"><label>Chart Screenshot (optional)</label><input type="file" id="mn-chart" accept="image/*" /><div id="mn-chart-preview"></div></div>
+      </div>
+      <div class="card" style="max-width:560px;margin-top:16px">
+        <div class="section-title">Summary</div>
+        <div class="calc-row" id="mn-calc"></div>
+        <div id="mn-status" style="margin-top:12px"></div>
+        <button id="mn-enter" class="btn btn-primary" style="margin-top:12px" disabled>✅ Add Trade</button>
+      </div>
+    `;
+    document.getElementById("mn-date").value = new Date().toISOString().slice(0, 10);
+    const $ = (id) => document.getElementById(id);
+    let chartDataUrl = null;
+
+    $("mn-chart").addEventListener("change", async (e) => {
+      const file = e.target.files[0];
+      if (!file) { chartDataUrl = null; $("mn-chart-preview").innerHTML = ""; return; }
+      try {
+        chartDataUrl = await compressImage(file);
+        if (chartDataUrl.length > 900000) { toast("Image too large", "error"); chartDataUrl = null; $("mn-chart-preview").innerHTML = ""; return; }
+        $("mn-chart-preview").innerHTML = `<img src="${chartDataUrl}" class="chart-thumb" />`;
+      } catch { toast("Could not read image", "error"); }
+    });
+
+    function recompute() {
+      const side = $("mn-side").value;
+      const entry = parseFloat($("mn-entry").value) || 0;
+      const stop = parseFloat($("mn-stop").value) || 0;
+      const target = parseFloat($("mn-target").value) || 0;
+      const shares = parseFloat($("mn-shares").value) || 0;
+      const rps = side === "Long" ? entry - stop : stop - entry;
+      const riskDollar = rps > 0 ? rps * shares : 0;
+      const riskPct = portfolio > 0 ? (riskDollar / portfolio) * 100 : 0;
+      const rr = (target > 0 && rps > 0) ? (side === "Long" ? target - entry : entry - target) / rps : 0;
+      $("mn-calc").innerHTML = `
+        <div class="calc-item"><div class="clabel">POSITION SIZE</div><div class="cvalue">$${(entry * shares).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div></div>
+        <div class="calc-item"><div class="clabel">RISK $</div><div class="cvalue red">${riskDollar ? "-$" + riskDollar.toFixed(2) : "—"}</div></div>
+        <div class="calc-item"><div class="clabel">RISK % OF PF</div><div class="cvalue">${riskPct ? riskPct.toFixed(1) + "%" : "—"}</div></div>
+        <div class="calc-item"><div class="clabel">R:R</div><div class="cvalue">${rr > 0 ? "1:" + rr.toFixed(2) : "—"}</div></div>`;
+      const ok = $("mn-symbol").value.trim() && entry > 0 && shares > 0 && stop > 0;
+      $("mn-enter").disabled = !ok;
+      $("mn-status").innerHTML = ok ? "" : `<div class="alert alert-warn">Fill ticker, entry, shares and stop.</div>`;
+    }
+    ["mn-symbol", "mn-side", "mn-entry", "mn-shares", "mn-stop", "mn-target"].forEach((id) => $(id).addEventListener("input", recompute));
+
+    $("mn-enter").addEventListener("click", async () => {
+      const target = parseFloat($("mn-target").value);
+      showLoader();
+      try {
+        const ref = await addTrade({
+          symbol: $("mn-symbol").value.trim(),
+          direction: $("mn-side").value,
+          entry_date: $("mn-date").value,
+          entry_price: parseFloat($("mn-entry").value),
+          shares: parseFloat($("mn-shares").value),
+          stop_loss: parseFloat($("mn-stop").value),
+          target: isFinite(target) && target > 0 ? target : null,
+          checklist_score: null,
+          grade: null,
+          setup_notes: $("mn-notes").value,
+          strategy: "other",
+        });
+        if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
+        toast(`Manual trade ${$("mn-symbol").value.trim().toUpperCase()} added`, "success");
+        mount();
+      } catch (e) {
+        toast("Save failed: " + e.message, "error");
+      } finally {
+        hideLoader();
+      }
+    });
+
+    recompute();
   }
 
   // Activate the first tab and mount

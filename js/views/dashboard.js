@@ -20,6 +20,7 @@ function setupName(strategy) {
   if (id === "trend-pullback") return "Trend-Pullback";
   if (id === "trend-line") return sub || "Trend Line";
   if (id === "breakout") return sub || "Breakout";
+  if (id === "other") return "Manual";
   return id;
 }
 
