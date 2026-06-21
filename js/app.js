@@ -26,6 +26,7 @@ if (configIsPlaceholder()) {
 
 import { renderDashboard } from "./views/dashboard.js";
 import { renderNewTrade } from "./views/newTrade.js";
+import { renderIdeas } from "./views/ideas.js";
 import { renderPositions } from "./views/positions.js";
 import { renderJournal } from "./views/journal.js";
 import { renderAnalytics } from "./views/analytics.js";
@@ -35,6 +36,7 @@ import { renderSettings } from "./views/settings.js";
 const VIEWS = {
   dashboard: renderDashboard,
   new: renderNewTrade,
+  ideas: renderIdeas,
   positions: renderPositions,
   journal: renderJournal,
   analytics: renderAnalytics,

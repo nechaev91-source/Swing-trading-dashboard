@@ -249,6 +249,31 @@ canvas { max-width: 100%; }
 }
 .grade-pct { font-size: 24px; font-weight: 700; }
 
+/* ── Ideas view ──────────────────────────────────────────── */
+.ideas-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.idea-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); overflow: hidden; display: flex; flex-direction: column;
+}
+.idea-img { width: 100%; height: 150px; object-fit: cover; display: block; background: var(--surface-2); }
+.idea-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.idea-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.idea-ticker { font-size: 17px; font-weight: 700; }
+.idea-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px; }
+.idea-badge.sp   { background: rgba(0,212,170,0.15); color: var(--accent); }
+.idea-badge.pick { background: rgba(210,153,34,0.18); color: var(--yellow); }
+.idea-badge.hot  { background: rgba(248,81,73,0.15); color: var(--red); }
+.idea-badge.pro  { background: var(--surface-2); color: var(--muted); }
+.idea-title { font-size: 14px; font-weight: 600; color: var(--text); text-decoration: none; line-height: 1.35; }
+.idea-title:hover { color: var(--accent); }
+.idea-summary { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.idea-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: auto; }
+.idea-actions { display: flex; gap: 8px; margin-top: 6px; }
+.idea-actions .btn { flex: 1; text-align: center; text-decoration: none; }
+
 /* ── Positions view ──────────────────────────────────────── */
 .pos-card { margin-bottom: 14px; }
 .pos-header {

@@ -21,7 +21,11 @@ const AUTO_LABELS = {
 
 export async function renderNewTrade(root) {
   const strategies = await getStrategies();
-  let mode = "breakout";
+
+  // Optional prefill from the Ideas tab
+  const pfSymbol = sessionStorage.getItem("prefill_symbol");
+  const pfStrategy = sessionStorage.getItem("prefill_strategy");
+  let mode = (pfStrategy && (strategies[pfStrategy] || pfStrategy === "trend-pullback")) ? pfStrategy : "breakout";
 
   const tabs = [
     ...Object.entries(strategies).map(([id, s]) => `<button class="strat-tab" data-mode="${id}">${s.label}</button>`),
@@ -421,4 +425,12 @@ export async function renderNewTrade(root) {
   // Activate the first tab and mount
   root.querySelector(`.strat-tab[data-mode="${mode}"]`).classList.add("active");
   mount();
+
+  // Apply prefilled ticker (from the Ideas tab), then clear it
+  if (pfSymbol) {
+    const el = document.getElementById("f-symbol") || document.getElementById("tp-symbol");
+    if (el) { el.value = pfSymbol; el.dispatchEvent(new Event("input")); }
+  }
+  sessionStorage.removeItem("prefill_symbol");
+  sessionStorage.removeItem("prefill_strategy");
 }

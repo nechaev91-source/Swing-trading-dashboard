@@ -19,6 +19,8 @@ jobs:
   scan:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: write   # allow committing the refreshed ideas feed
 
     steps:
       - name: Checkout repo
@@ -35,6 +37,7 @@ jobs:
         run: pip install -r scripts/requirements.txt
 
       - name: Run daily digest
+        continue-on-error: true   # don't block the ideas scan if Telegram isn't set up
         working-directory: scripts
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -42,3 +45,17 @@ jobs:
         run: |
           STRATEGY="${{ github.event.inputs.strategy || 'trend' }}"
           python notify.py "$STRATEGY"
+
+      - name: Scan trend-line ideas (TradingView)
+        if: always()
+        working-directory: scripts
+        run: python idea_scan.py
+
+      - name: Commit refreshed ideas feed
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add signals/trendline_ideas.json
+          git diff --staged --quiet || git commit -m "chore: refresh trend-line ideas feed [skip ci]"
+          git push
