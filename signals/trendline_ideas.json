@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-06-24T01:24:04+00:00",
+  "generated_at": "2026-06-25T01:31:36+00:00",
   "source": "TradingView Ideas \u2014 Trend Lines tag (US stocks)",
   "count": 18,
   "ideas": [
@@ -9,8 +9,8 @@
       "title": "Trading Roadmap | Classical TA \u00b7 Lesson 02 \u2014 Mastering Trends",
       "author": "BigBeluga",
       "premium": true,
-      "likes": 343,
-      "comments": 17,
+      "likes": 370,
+      "comments": 20,
       "is_sp500": true,
       "is_hot": true,
       "editors_pick": false,
@@ -18,24 +18,7 @@
       "chart_url": "https://www.tradingview.com/chart/AAPL/QSO8h3nA-Trading-Roadmap-Classical-TA-Lesson-02-Mastering-Trends/",
       "image": "https://s3.tradingview.com/q/QSO8h3nA_mid.webp",
       "created_at": "2026-06-22T13:05:02+00:00",
-      "score": 382
-    },
-    {
-      "ticker": "AMZN",
-      "exchange": "NASDAQ",
-      "title": "Amazon - Preparing a textbook position!",
-      "author": "TheTraderPhil",
-      "premium": true,
-      "likes": 57,
-      "comments": 22,
-      "is_sp500": true,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "\ud83c\udf81Amazon ( NASDAQ:AMZN ) is really almost ready:      \ud83d\udd0eAnalysis summary:   Amazon has been holding a textbook support trendline basically since 1997. And at this",
-      "chart_url": "https://www.tradingview.com/chart/AMZN/SXsY2nJb-Amazon-Preparing-a-textbook-position/",
-      "image": "https://s3.tradingview.com/s/SXsY2nJb_mid.webp",
-      "created_at": "2026-06-15T21:10:00+00:00",
-      "score": 106
+      "score": 415
     },
     {
       "ticker": "NFLX",
@@ -43,8 +26,8 @@
       "title": "Netflix - This chart is soooo textbook!",
       "author": "TheTraderPhil",
       "premium": true,
-      "likes": 76,
-      "comments": 12,
+      "likes": 83,
+      "comments": 14,
       "is_sp500": true,
       "is_hot": true,
       "editors_pick": false,
@@ -52,7 +35,24 @@
       "chart_url": "https://www.tradingview.com/chart/NFLX/DSXstBRE-Netflix-This-chart-is-soooo-textbook/",
       "image": "https://s3.tradingview.com/d/DSXstBRE_mid.webp",
       "created_at": "2026-06-16T20:54:42+00:00",
-      "score": 105
+      "score": 116
+    },
+    {
+      "ticker": "AMZN",
+      "exchange": "NASDAQ",
+      "title": "Amazon - Preparing a textbook position!",
+      "author": "TheTraderPhil",
+      "premium": true,
+      "likes": 59,
+      "comments": 23,
+      "is_sp500": true,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "\ud83c\udf81Amazon ( NASDAQ:AMZN ) is really almost ready:      \ud83d\udd0eAnalysis summary:   Amazon has been holding a textbook support trendline basically since 1997. And at this",
+      "chart_url": "https://www.tradingview.com/chart/AMZN/SXsY2nJb-Amazon-Preparing-a-textbook-position/",
+      "image": "https://s3.tradingview.com/s/SXsY2nJb_mid.webp",
+      "created_at": "2026-06-15T21:10:00+00:00",
+      "score": 110
     },
     {
       "ticker": "TSLA",
@@ -60,7 +60,7 @@
       "title": "Tesla - SpaceX and the bullish breakout!",
       "author": "TheTraderPhil",
       "premium": true,
-      "likes": 34,
+      "likes": 38,
       "comments": 17,
       "is_sp500": true,
       "is_hot": true,
@@ -69,7 +69,7 @@
       "chart_url": "https://www.tradingview.com/chart/TSLA/Fy7ycV1c-Tesla-SpaceX-and-the-bullish-breakout/",
       "image": "https://s3.tradingview.com/f/Fy7ycV1c_mid.webp",
       "created_at": "2026-06-09T20:56:38+00:00",
-      "score": 73
+      "score": 77
     },
     {
       "ticker": "MSFT",
@@ -77,8 +77,8 @@
       "title": "Microsoft's Triple Confluence Retest!",
       "author": "TheSignalyst",
       "premium": true,
-      "likes": 51,
-      "comments": 5,
+      "likes": 54,
+      "comments": 7,
       "is_sp500": true,
       "is_hot": true,
       "editors_pick": false,
@@ -86,7 +86,7 @@
       "chart_url": "https://www.tradingview.com/chart/MSFT/cQORYMbp-Microsoft-s-Triple-Confluence-Retest/",
       "image": "https://s3.tradingview.com/c/cQORYMbp_mid.webp",
       "created_at": "2026-06-22T07:43:43+00:00",
-      "score": 66
+      "score": 73
     },
     {
       "ticker": "SPCX",
@@ -94,8 +94,8 @@
       "title": "SPCX: $190 Breakout Trigger vs $184 Breakdown Level",
       "author": "Arthursh",
       "premium": true,
-      "likes": 39,
-      "comments": 8,
+      "likes": 40,
+      "comments": 9,
       "is_sp500": false,
       "is_hot": true,
       "editors_pick": false,
@@ -103,24 +103,7 @@
       "chart_url": "https://www.tradingview.com/chart/SPCX/gftlaW5x-SPCX-190-Breakout-Trigger-vs-184-Breakdown-Level/",
       "image": "https://s3.tradingview.com/g/gftlaW5x_mid.webp",
       "created_at": "2026-06-20T09:15:56+00:00",
-      "score": 60
-    },
-    {
-      "ticker": "TSLA",
-      "exchange": "NASDAQ",
-      "title": "Tesla (TSLA): The Same 2021 Crash Pattern",
-      "author": "MasterAnanda",
-      "premium": true,
-      "likes": 10,
-      "comments": 3,
-      "is_sp500": true,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "I am seeing a repeat of the same pattern that led to the crash in 2022.  TSLA peaked November 2021 and started to produce a downtrend, a descending wave just li",
-      "chart_url": "https://www.tradingview.com/chart/TSLA/Ql6wvJTM-Tesla-TSLA-The-Same-2021-Crash-Pattern/",
-      "image": "https://s3.tradingview.com/q/Ql6wvJTM_mid.webp",
-      "created_at": "2026-06-22T23:14:18+00:00",
-      "score": 21
+      "score": 63
     },
     {
       "ticker": "AMD",
@@ -128,7 +111,7 @@
       "title": "AMD | Riding the Channel \u2014 Liquidity Swept, Eyes Higher",
       "author": "BigBeluga",
       "premium": true,
-      "likes": 16,
+      "likes": 26,
       "comments": 0,
       "is_sp500": true,
       "is_hot": true,
@@ -137,7 +120,24 @@
       "chart_url": "https://www.tradingview.com/chart/AMD/e38uMcYW-AMD-Riding-the-Channel-Liquidity-Swept-Eyes-Higher/",
       "image": "https://s3.tradingview.com/e/e38uMcYW_mid.webp",
       "created_at": "2026-06-23T13:05:30+00:00",
-      "score": 21
+      "score": 31
+    },
+    {
+      "ticker": "TSLA",
+      "exchange": "NASDAQ",
+      "title": "Tesla (TSLA): The Same 2021 Crash Pattern",
+      "author": "MasterAnanda",
+      "premium": true,
+      "likes": 15,
+      "comments": 3,
+      "is_sp500": true,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "I am seeing a repeat of the same pattern that led to the crash in 2022.  TSLA peaked November 2021 and started to produce a downtrend, a descending wave just li",
+      "chart_url": "https://www.tradingview.com/chart/TSLA/Ql6wvJTM-Tesla-TSLA-The-Same-2021-Crash-Pattern/",
+      "image": "https://s3.tradingview.com/q/Ql6wvJTM_mid.webp",
+      "created_at": "2026-06-22T23:14:18+00:00",
+      "score": 26
     },
     {
       "ticker": "PLTR",
@@ -157,29 +157,12 @@
       "score": 19
     },
     {
-      "ticker": "CRWV",
-      "exchange": "NASDAQ",
-      "title": "Coreweave looks very weak",
-      "author": "ChipsnCheese",
-      "premium": true,
-      "likes": 7,
-      "comments": 0,
-      "is_sp500": false,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "Out of all AI infra companies, Coreweave charts are one of the weakest. The prices have started to make lower highs at the trend line which also conicides with ",
-      "chart_url": "https://www.tradingview.com/chart/CRWV/5yBO1o0H-Coreweave-looks-very-weak/",
-      "image": "https://s3.tradingview.com/5/5yBO1o0H_mid.webp",
-      "created_at": "2026-06-19T08:34:42+00:00",
-      "score": 12
-    },
-    {
       "ticker": "NFLX",
       "exchange": "NASDAQ",
       "title": "Pop Corn!",
       "author": "balinor",
       "premium": true,
-      "likes": 6,
+      "likes": 12,
       "comments": 0,
       "is_sp500": true,
       "is_hot": true,
@@ -188,7 +171,24 @@
       "chart_url": "https://www.tradingview.com/chart/NFLX/tcEv95kk-Pop-Corn/",
       "image": "https://s3.tradingview.com/t/tcEv95kk_mid.webp",
       "created_at": "2026-06-23T15:30:59+00:00",
-      "score": 11
+      "score": 17
+    },
+    {
+      "ticker": "RKLB",
+      "exchange": "NASDAQ",
+      "title": "RKLB \u2014 Retesting the Breakout",
+      "author": "ibraheeemz",
+      "premium": true,
+      "likes": 4,
+      "comments": 3,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "Technical Setup:  After a prolonged consolidation, RKLB broke out above the critical $99 level with conviction, surging all the way to $150. Price is now pullin",
+      "chart_url": "https://www.tradingview.com/chart/RKLB/2ClgZeBd-RKLB-Retesting-the-Breakout/",
+      "image": "https://s3.tradingview.com/2/2ClgZeBd_mid.webp",
+      "created_at": "2026-06-19T08:55:30+00:00",
+      "score": 15
     },
     {
       "ticker": "MU",
@@ -196,7 +196,7 @@
       "title": "Micron: Memory Becomes the Key Growth Driver",
       "author": "InvestWorld_777",
       "premium": true,
-      "likes": 5,
+      "likes": 7,
       "comments": 0,
       "is_sp500": true,
       "is_hot": true,
@@ -205,7 +205,7 @@
       "chart_url": "https://www.tradingview.com/chart/MU/MxWjcGuw-Micron-Memory-Becomes-the-Key-Growth-Driver/",
       "image": "https://s3.tradingview.com/m/MxWjcGuw_mid.webp",
       "created_at": "2026-06-23T11:00:56+00:00",
-      "score": 10
+      "score": 12
     },
     {
       "ticker": "COIN",
@@ -213,7 +213,7 @@
       "title": "Coinbase Breaks Below Support as Bearish Wave 5 Gains Traction",
       "author": "ew-forecast",
       "premium": true,
-      "likes": 4,
+      "likes": 5,
       "comments": 0,
       "is_sp500": true,
       "is_hot": true,
@@ -222,6 +222,23 @@
       "chart_url": "https://www.tradingview.com/chart/COIN/Jhdb8ivG-Coinbase-Breaks-Below-Support-as-Bearish-Wave-5-Gains-Traction/",
       "image": "https://s3.tradingview.com/j/Jhdb8ivG_mid.webp",
       "created_at": "2026-06-23T06:53:05+00:00",
+      "score": 10
+    },
+    {
+      "ticker": "SPCX",
+      "exchange": "NASDAQ",
+      "title": "SPCX Jun 22: Dead Cat Bounce or New Base?",
+      "author": "BullBearInsights",
+      "premium": true,
+      "likes": 4,
+      "comments": 0,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "SPCX remains one of the most volatile names in the market following its explosive IPO launch. After reaching a high near 200, the stock experienced a sharp sell",
+      "chart_url": "https://www.tradingview.com/chart/SPCX/anzMzkxm-SPCX-Jun-22-Dead-Cat-Bounce-or-New-Base/",
+      "image": "https://s3.tradingview.com/a/anzMzkxm_mid.webp",
+      "created_at": "2026-06-22T04:10:06+00:00",
       "score": 9
     },
     {
@@ -242,29 +259,12 @@
       "score": 8
     },
     {
-      "ticker": "AAPL",
-      "exchange": "NASDAQ",
-      "title": "My Edge Has Nothing to Do With Indicators",
-      "author": "davekclinton76",
-      "premium": true,
-      "likes": 2,
-      "comments": 0,
-      "is_sp500": true,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "Most traders are trying to predict the next move. That's not my game. My edge is waiting for the market to show its hand before I risk a dollar. In this episode",
-      "chart_url": "https://www.tradingview.com/chart/AAPL/XSVSOw4n-My-Edge-Has-Nothing-to-Do-With-Indicators/",
-      "image": "https://s3.tradingview.com/x/XSVSOw4n_mid.webp",
-      "created_at": "2026-06-22T02:50:56+00:00",
-      "score": 7
-    },
-    {
       "ticker": "UNH",
       "exchange": "NYSE",
       "title": "UNH A+ 8.5 Wedge Setup",
       "author": "SWRLS",
       "premium": true,
-      "likes": 1,
+      "likes": 2,
       "comments": 0,
       "is_sp500": true,
       "is_hot": true,
@@ -273,6 +273,23 @@
       "chart_url": "https://www.tradingview.com/chart/UNH/f1dsZlxt-UNH-A-8-5-Wedge-Setup/",
       "image": "https://s3.tradingview.com/f/f1dsZlxt_mid.webp",
       "created_at": "2026-06-23T01:03:06+00:00",
+      "score": 7
+    },
+    {
+      "ticker": "CSCO",
+      "exchange": "NASDAQ",
+      "title": "CSCO Short",
+      "author": "PlanTradePlanMM",
+      "premium": true,
+      "likes": 1,
+      "comments": 0,
+      "is_sp500": true,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "Trendline break + retest,  Supply Zone  Short Entry 121.5 Stop  131         Target  100, 87   Risk management is much more important than a good entry point.   ",
+      "chart_url": "https://www.tradingview.com/chart/CSCO/7rbpXmbH-CSCO-Short/",
+      "image": "https://s3.tradingview.com/7/7rbpXmbH_mid.webp",
+      "created_at": "2026-06-23T16:49:02+00:00",
       "score": 6
     },
     {
@@ -290,23 +307,6 @@
       "chart_url": "https://www.tradingview.com/chart/AAPL/puiuIEeI-AAPL-June-22-Finding-Confluence-Before-Entry/",
       "image": "https://s3.tradingview.com/p/puiuIEeI_mid.webp",
       "created_at": "2026-06-22T12:36:45+00:00",
-      "score": 6
-    },
-    {
-      "ticker": "CSCO",
-      "exchange": "NASDAQ",
-      "title": "CSCO Short",
-      "author": "PlanTradePlanMM",
-      "premium": true,
-      "likes": 1,
-      "comments": 0,
-      "is_sp500": true,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "Trendline break + retest,  Supply Zone  Short Entry 121.5 Stop  131         Target  100, 87   Risk management is much more important than a good entry point.   ",
-      "chart_url": "https://www.tradingview.com/chart/CSCO/7rbpXmbH-CSCO-Short/",
-      "image": "https://s3.tradingview.com/7/7rbpXmbH_mid.webp",
-      "created_at": "2026-06-23T16:49:02+00:00",
       "score": 6
     }
   ]
