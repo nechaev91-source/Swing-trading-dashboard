@@ -1,4 +1,4 @@
-import { getAllTrades, closeTrade, deleteTrade, saveChartUrl } from "../db.js";
+import { getAllTrades, closeTrade, deleteTrade, saveChartUrl, updateTrade } from "../db.js";
 import { realizedPnl, tradeNetPnl, tradeR } from "../calc.js";
 import { fmt, colorClass, showLoader, hideLoader, toast, esc, compressImage } from "../ui.js";
 
@@ -60,13 +60,96 @@ export async function renderJournal(root) {
         <tbody>${rows}</tbody></table></div>
       <div class="spacer"></div>
       <div id="close-section"></div>
+      <div id="edit-section"></div>
       <div id="chart-section"></div>
       <div id="delete-section"></div>
     `;
 
     renderCloseSection(trades.filter((t) => t.status === "open"));
+    renderEditSection(trades);
     renderChartSection(trades);
     renderDeleteSection(trades);
+  }
+
+  // ── Edit any trade (fix a wrong value, incl. closed trades) ─────────────────
+  function renderEditSection(allTrades) {
+    const el = document.getElementById("edit-section");
+    if (!allTrades.length) { el.innerHTML = ""; return; }
+    const opts = allTrades.map((t) => `<option value="${t.id}">#${t.id.slice(0, 5)} ${esc(t.symbol)} (${t.status})</option>`).join("");
+    el.innerHTML = `
+      <div class="card">
+        <div class="section-title">✏️ Edit a Trade</div>
+        <div class="field"><label>Select trade</label><select id="edit-sel">${opts}</select></div>
+        <div id="edit-form"></div>
+      </div>`;
+
+    const sel = document.getElementById("edit-sel");
+    const numv = (v) => { const n = parseFloat(v); return isFinite(n) ? n : null; };
+
+    function renderForm() {
+      const t = allTrades.find((x) => x.id === sel.value);
+      const closed = t.status === "closed";
+      document.getElementById("edit-form").innerHTML = `
+        <div class="field-row">
+          <div class="field"><label>Side</label><select id="e-side">
+            <option ${t.direction === "Long" ? "selected" : ""}>Long</option>
+            <option ${t.direction === "Short" ? "selected" : ""}>Short</option></select></div>
+          <div class="field"><label>Entry Date</label><input type="date" id="e-edate" value="${esc(t.entry_date || "")}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Entry Price $</label><input type="number" step="0.01" id="e-entry" value="${t.entry_price}"></div>
+          <div class="field"><label>Shares</label><input type="number" step="1" id="e-shares" value="${t.shares}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Stop Loss $ (optional)</label><input type="number" step="0.01" id="e-stop" value="${t.stop_loss ?? ""}"></div>
+          <div class="field"><label>Target $ (optional)</label><input type="number" step="0.01" id="e-target" value="${t.target ?? ""}"></div>
+        </div>
+        <div class="field-row">
+          <div class="field"><label>Commission $ (round trip)</label><input type="number" step="0.5" id="e-comm" value="${t.commission ?? 0}"></div>
+          ${closed ? `<div class="field"><label>Exit Price $</label><input type="number" step="0.01" id="e-exit" value="${t.exit_price ?? ""}"></div>` : `<div class="field"></div>`}
+        </div>
+        ${closed ? `<div class="field-row">
+          <div class="field"><label>Exit Date</label><input type="date" id="e-xdate" value="${esc(t.exit_date || "")}"></div>
+          <div class="field"><label>Exit Notes</label><input id="e-xnotes" value="${esc(t.exit_notes || "")}"></div>
+        </div>` : ""}
+        <div class="field"><label>Setup Notes</label><input id="e-notes" value="${esc(t.setup_notes || "")}"></div>
+        <button id="e-save" class="btn btn-primary btn-sm">Save Changes</button>`;
+
+      document.getElementById("e-save").addEventListener("click", async () => {
+        const entry = numv(document.getElementById("e-entry").value);
+        const shares = numv(document.getElementById("e-shares").value);
+        if (entry == null || entry <= 0 || shares == null || shares <= 0) { toast("Entry and shares must be positive", "error"); return; }
+        const stop = numv(document.getElementById("e-stop").value);
+        const target = numv(document.getElementById("e-target").value);
+        const comm = numv(document.getElementById("e-comm").value);
+        const fields = {
+          direction: document.getElementById("e-side").value,
+          entry_date: document.getElementById("e-edate").value,
+          entry_price: entry,
+          shares,
+          stop_loss: (stop != null && stop > 0) ? stop : null,
+          target: (target != null && target > 0) ? target : null,
+          commission: (comm != null && comm >= 0) ? comm : 0,
+          setup_notes: document.getElementById("e-notes").value,
+        };
+        if (closed) {
+          const exit = numv(document.getElementById("e-exit").value);
+          if (exit == null || exit <= 0) { toast("Exit price must be positive", "error"); return; }
+          fields.exit_price = exit;
+          fields.exit_date = document.getElementById("e-xdate").value;
+          fields.exit_notes = document.getElementById("e-xnotes").value;
+        }
+        showLoader();
+        try {
+          await updateTrade(sel.value, fields);
+          toast("Trade updated", "success");
+          renderJournal(root);
+        } catch (e) { toast("Update failed: " + e.message, "error"); }
+        finally { hideLoader(); }
+      });
+    }
+    sel.addEventListener("change", renderForm);
+    renderForm();
   }
 
   // ── Close a position ──────────────────────────────────────────────────────

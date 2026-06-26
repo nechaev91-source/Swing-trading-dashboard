@@ -1,5 +1,6 @@
 import { getOpenTrades, updateTradeStop, updateTrade, closeTrade } from "../db.js";
-import { showLoader, hideLoader, toast, esc } from "../ui.js";
+import { realizedPnl } from "../calc.js";
+import { fmt, colorClass, showLoader, hideLoader, toast, esc } from "../ui.js";
 
 function stratLabel(strategy) {
   if (!strategy) return ["Other", "#8b949e"];
@@ -77,7 +78,21 @@ export async function renderPositions(root) {
           <div class="pos-actions" id="act-${t.id}">
             <button class="btn btn-secondary btn-sm edit-pos" data-id="${t.id}">✏️ Edit</button>
             ${isTrend ? `<button class="btn btn-secondary btn-sm raise-stop" data-id="${t.id}">⬆ Raise Stop</button>` : ""}
-            <button class="btn btn-danger btn-sm close-pos" data-id="${t.id}">✕ Close${isTrend ? " (stop hit)" : ""}</button>
+            <button class="btn btn-danger btn-sm close-toggle" data-id="${t.id}">✕ Close</button>
+          </div>
+
+          <!-- Close form -->
+          <div class="pos-edit hidden" id="cl-${t.id}">
+            <div class="field-row">
+              <div class="field"><label>Exit (sell) Price $</label><input type="number" step="0.01" id="cl-price-${t.id}" value="${curStop != null ? (+curStop).toFixed(2) : t.entry_price}"></div>
+              <div class="field"><label>Exit Date</label><input type="date" id="cl-date-${t.id}"></div>
+            </div>
+            <div class="field"><label>Exit Notes (optional)</label><input id="cl-notes-${t.id}" placeholder="reason / lesson"></div>
+            <div id="cl-prev-${t.id}" style="font-weight:600;margin-bottom:10px"></div>
+            <div class="pos-actions">
+              <button class="btn btn-primary btn-sm do-close" data-id="${t.id}">Confirm Close</button>
+              <button class="btn btn-ghost btn-sm cancel-close" data-id="${t.id}">Cancel</button>
+            </div>
           </div>
 
           <!-- Inline stop raise (trend-pullback) -->
@@ -145,20 +160,40 @@ export async function renderPositions(root) {
       finally { hideLoader(); }
     }));
 
-    // ── Close ─────────────────────────────────────────────────
-    body.querySelectorAll(".close-pos").forEach((b) => b.addEventListener("click", async () => {
+    // ── Close (with custom sell price) ────────────────────────
+    function closePreview(id) {
+      const t = trades.find((x) => x.id === id);
+      const exit = parseFloat(document.getElementById(`cl-price-${id}`).value);
+      const el = document.getElementById(`cl-prev-${id}`);
+      if (!isFinite(exit)) { el.textContent = ""; return; }
+      const pnl = realizedPnl(t.direction, t.entry_price, exit, t.shares) - (t.commission || 0);
+      const risk = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
+      const r = risk ? pnl / risk : 0;
+      el.className = colorClass(pnl);
+      el.innerHTML = `Preview: ${fmt.signMoney(pnl)} (net of $${(t.commission || 0).toFixed(2)} comm)${risk ? " | " + (r >= 0 ? "+" : "") + r.toFixed(2) + "R" : ""}`;
+    }
+
+    body.querySelectorAll(".close-toggle").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      show(`cl-${id}`); hide(`act-${id}`);
+      document.getElementById(`cl-date-${id}`).value = new Date().toISOString().slice(0, 10);
+      document.getElementById(`cl-price-${id}`).addEventListener("input", () => closePreview(id));
+      closePreview(id);
+    }));
+    body.querySelectorAll(".cancel-close").forEach((b) => b.addEventListener("click", () => {
+      hide(`cl-${b.dataset.id}`); show(`act-${b.dataset.id}`);
+    }));
+    body.querySelectorAll(".do-close").forEach((b) => b.addEventListener("click", async () => {
       const id = b.dataset.id;
       const t = trades.find((x) => x.id === id);
-      const curStop = t.current_stop ?? t.stop_loss;
-      const exit = (curStop != null && isFinite(curStop)) ? curStop : t.entry_price;
-      const confirmed = confirm(
-        `Close ${t.symbol} at $${(+exit).toFixed(2)}?\n(You can adjust the exit price in the Journal view.)`
-      );
-      if (!confirmed) return;
+      const exit = parseFloat(document.getElementById(`cl-price-${id}`).value);
+      if (!isFinite(exit) || exit <= 0) { toast("Enter a valid exit price", "error"); return; }
+      const date = document.getElementById(`cl-date-${id}`).value || new Date().toISOString().slice(0, 10);
+      const notes = document.getElementById(`cl-notes-${id}`).value;
       showLoader();
       try {
-        await closeTrade(id, exit, new Date().toISOString().slice(0, 10), curStop != null ? "Stop hit" : "Closed");
-        toast(`${t.symbol} closed at $${(+exit).toFixed(2)}`, "success");
+        await closeTrade(id, exit, date, notes);
+        toast(`${t.symbol} closed at $${exit.toFixed(2)}`, "success");
         await refresh();
       } catch (e) { toast("Close failed: " + e.message, "error"); }
       finally { hideLoader(); }
