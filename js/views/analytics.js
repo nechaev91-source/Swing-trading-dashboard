@@ -1,6 +1,6 @@
 import { getClosedTrades } from "../db.js";
 import { tradeNetPnl, tradeR } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, esc, getPortfolio, toast } from "../ui.js";
+import { fmt, colorClass, showLoader, hideLoader, esc, getPortfolio, toast, normDate } from "../ui.js";
 
 function setupName(strategy) {
   if (!strategy) return "Other";
@@ -28,7 +28,8 @@ export async function renderAnalytics(root) {
   }
 
   const recs = trades.filter((t) => t.exit_price != null).map((t) => ({
-    symbol: t.symbol, direction: t.direction, entry_date: t.entry_date, exit_date: t.exit_date,
+    symbol: t.symbol, direction: t.direction,
+    entry_date: normDate(t.entry_date), exit_date: normDate(t.exit_date),
     entry: t.entry_price, exit: t.exit_price, shares: t.shares, commission: t.commission || 0,
     pnl: tradeNetPnl(t), r: tradeR(t), hasStop: t.stop_loss != null && isFinite(t.stop_loss),
     won: tradeNetPnl(t) > 0, score: t.checklist_score, setup: setupName(t.strategy),
