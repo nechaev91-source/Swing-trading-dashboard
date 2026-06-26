@@ -21,12 +21,23 @@ export const fmt = {
 
 export function colorClass(n) { return n >= 0 ? "green" : "red"; }
 
-// Portfolio base value — stored locally per browser
+// Portfolio base (starting capital). Cached in localStorage for synchronous reads,
+// but the source of truth is Firestore so it syncs across devices.
+import { getUserSetting, setUserSetting } from "./db.js";
+
 export function getPortfolio() {
   return parseFloat(localStorage.getItem("portfolio_value") || "10000");
 }
 export function setPortfolio(v) {
   localStorage.setItem("portfolio_value", String(v));
+  setUserSetting("portfolio_value", v).catch(() => {});  // sync to other devices
+}
+// Pull the saved value from Firestore into the local cache (call once after login).
+export async function syncPortfolioFromRemote() {
+  try {
+    const v = await getUserSetting("portfolio_value", null);
+    if (v != null && isFinite(v)) localStorage.setItem("portfolio_value", String(v));
+  } catch { /* offline / first run — keep local */ }
 }
 
 // Escape user text before injecting into innerHTML

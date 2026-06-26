@@ -1,6 +1,6 @@
 // Main entry: auth gate + hash router.
 import { onAuth, login, signup, logout, authErrorMessage } from "./auth.js";
-import { showLoader, hideLoader, toast } from "./ui.js";
+import { showLoader, hideLoader, toast, syncPortfolioFromRemote } from "./ui.js";
 import { firebaseConfig, TWELVE_DATA_KEY } from "./config.js";
 
 // ── Setup guard: warn clearly if keys aren't configured yet ────────────────────
@@ -69,10 +69,11 @@ async function route() {
 window.addEventListener("hashchange", route);
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
-onAuth((user) => {
+onAuth(async (user) => {
   if (user) {
     authScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
+    await syncPortfolioFromRemote();   // pull starting capital saved on other devices
     if (!location.hash) location.hash = "#dashboard";
     route();
   } else {

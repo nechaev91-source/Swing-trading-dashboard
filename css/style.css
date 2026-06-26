@@ -274,7 +274,10 @@ canvas { max-width: 100%; }
 }
 .pl-hero { grid-column: 1 / 3; grid-row: 1 / 3; display: flex; flex-direction: column; }
 .pl-winrate { grid-column: 3; grid-row: 1; display: flex; align-items: center; gap: 20px; }
-.pl-exposure { grid-column: 3; grid-row: 2; display: flex; align-items: center; gap: 20px; }
+.pl-exposure { grid-column: 3; grid-row: 2; display: flex; flex-direction: column; gap: 14px; }
+.pl-exposure-row { display: flex; align-items: center; gap: 20px; }
+.pl-cash { font-size: 13px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
+.pl-cash b { color: var(--text); font-size: 15px; }
 .pl-kpis { grid-column: 1 / 3; grid-row: 3; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 .pl-open { grid-column: 3; grid-row: 3; }
 

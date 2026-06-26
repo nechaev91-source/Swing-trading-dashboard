@@ -1,11 +1,24 @@
 // Firestore data layer — mirrors the original db.py CRUD functions.
 // Each trade is a document under  users/{uid}/trades/{autoId}
 import {
-  collection, doc, addDoc, updateDoc, deleteDoc,
+  collection, doc, addDoc, updateDoc, deleteDoc, getDoc, setDoc,
   getDocs, query, where, orderBy, writeBatch,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { db } from "./firebase.js";
 import { currentUser } from "./auth.js";
+
+// ── User settings (synced across devices) ────────────────────────────────────
+// Stored at users/{uid}/settings/app — e.g. portfolio_value.
+export async function getUserSetting(key, fallback = null) {
+  const ref = doc(db, "users", currentUser().uid, "settings", "app");
+  const snap = await getDoc(ref);
+  return snap.exists() && snap.data()[key] != null ? snap.data()[key] : fallback;
+}
+
+export async function setUserSetting(key, value) {
+  const ref = doc(db, "users", currentUser().uid, "settings", "app");
+  await setDoc(ref, { [key]: value }, { merge: true });
+}
 
 function tradesCol() {
   const uid = currentUser().uid;

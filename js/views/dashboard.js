@@ -104,6 +104,7 @@ export async function renderDashboard(root) {
   const portfolioValue = portfolioBase + realizedPnlAll + unrealized;
   const allTimePnl = realizedPnlAll + unrealized;
   const allTimePct = portfolioBase > 0 ? (allTimePnl / portfolioBase) * 100 : 0;
+  const cashDollar = Math.max(0, portfolioValue - deployed);
 
   // exposure: open positions (by market value) + cash
   const exposurePct = portfolioValue > 0 ? Math.min(100, (deployed / portfolioValue) * 100) : 0;
@@ -183,16 +184,19 @@ export async function renderDashboard(root) {
 
       <!-- Exposure -->
       <div class="card pl-exposure">
-        <div class="pl-donut">
-          ${donut(alloc)}
-          <div class="pl-ring-center"><span class="pl-label">exposure</span><span class="pl-donut-num">${exposurePct.toFixed(0)}%</span></div>
+        <div class="pl-exposure-row">
+          <div class="pl-donut">
+            ${donut(alloc)}
+            <div class="pl-ring-center"><span class="pl-label">exposure</span><span class="pl-donut-num">${exposurePct.toFixed(0)}%</span></div>
+          </div>
+          <div class="pl-alloc">
+            ${alloc.length ? alloc.map((a) => `
+              <div class="pl-alloc-row"><span class="pl-swatch" style="background:${a.col}"></span>
+              <span class="pl-muted">${esc(a.name)}</span><span class="pl-alloc-pct">${a.pct.toFixed(0)}%</span></div>`).join("")
+              : `<div class="pl-muted">No open exposure</div>`}
+          </div>
         </div>
-        <div class="pl-alloc">
-          ${alloc.length ? alloc.map((a) => `
-            <div class="pl-alloc-row"><span class="pl-swatch" style="background:${a.col}"></span>
-            <span class="pl-muted">${esc(a.name)}</span><span class="pl-alloc-pct">${a.pct.toFixed(0)}%</span></div>`).join("")
-            : `<div class="pl-muted">No open exposure</div>`}
-        </div>
+        <div class="pl-cash">💵 Cash <b>${fmt.money(cashDollar)}</b> · Invested ${fmt.money(deployed)}</div>
       </div>
 
       <!-- KPIs -->
