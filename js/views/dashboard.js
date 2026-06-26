@@ -224,7 +224,7 @@ export async function renderDashboard(root) {
     let streak = 0, best = 0;
     for (const r of wr) { if (r.pnl > 0) { streak++; best = Math.max(best, streak); } else streak = 0; }
     document.getElementById("pl-kpis").innerHTML =
-      kpi("Profit factor", pf === Infinity ? "∞" : pf.toFixed(1), pf >= 1.5 ? "Healthy" : "Needs work", pf >= 1.5 ? COL.green : COL.red) +
+      kpi("Profit factor", pf === Infinity ? "∞" : pf.toFixed(2), pf >= 1.5 ? "Healthy" : "Needs work", pf >= 1.5 ? COL.green : COL.red) +
       kpi("Expectancy", (expectancy >= 0 ? "+" : "") + expectancy.toFixed(2) + "R", "per $1 risked", COL.accent) +
       kpi("Win streak", String(best), `${wr.length} closed`, COL.lime);
 

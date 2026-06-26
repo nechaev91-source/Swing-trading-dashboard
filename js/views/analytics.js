@@ -27,7 +27,7 @@ export async function renderAnalytics(root) {
     return;
   }
 
-  const recs = trades.map((t) => ({
+  const recs = trades.filter((t) => t.exit_price != null).map((t) => ({
     symbol: t.symbol, direction: t.direction, exit_date: t.exit_date,
     pnl: tradeNetPnl(t), r: tradeR(t), hasStop: t.stop_loss != null && isFinite(t.stop_loss),
     won: tradeNetPnl(t) > 0, score: t.checklist_score, setup: setupName(t.strategy),
