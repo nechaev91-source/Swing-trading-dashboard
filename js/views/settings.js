@@ -55,6 +55,7 @@ export async function renderSettings(root) {
       <div class="section-title">Backfill Stops (historical)</div>
       <div class="hint">Closed trades imported without a stop. Set each one's stop to reflect a fixed dollar risk, so R-based stats work (R = trade P&L ÷ risk). Trades that already have a stop are left untouched.</div>
       <div class="field" style="max-width:220px;margin-top:8px"><label>Risk per trade ($)</label><input type="number" id="bf-risk" value="100" step="10" /></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 8px"><input type="checkbox" id="bf-overwrite" style="width:auto" /> Also re-apply to imported trades that already have a stop (fixes a previous backfill)</label>
       <div id="bf-info" class="hint">Checking…</div>
       <button id="bf-btn" class="btn btn-secondary" style="margin-top:8px">Backfill stops</button>
       <div id="bf-result"></div>
@@ -135,21 +136,28 @@ export async function renderSettings(root) {
   });
 
   // ── Backfill stops at a fixed $ risk per trade ──────────────────────────────
-  const stopLess = (closed) => closed.filter((t) => t.exit_price != null && t.stop_loss == null);
-  (async () => {
+  // Default: only stop-less trades. With overwrite: also re-apply to imported
+  // trades that already have a stop (e.g. set by an earlier backfill).
+  const targetsFor = (closed, overwrite) => closed.filter((t) =>
+    t.exit_price != null && (t.stop_loss == null || (overwrite && t.imported)));
+  async function refreshBfInfo() {
     try {
-      const n = stopLess(await getClosedTrades()).length;
+      const ov = document.getElementById("bf-overwrite").checked;
+      const n = targetsFor(await getClosedTrades(), ov).length;
       document.getElementById("bf-info").textContent = n
-        ? `${n} closed trade(s) have no stop — these will get a stop at the risk below.`
-        : "No stop-less closed trades found.";
+        ? `${n} closed trade(s) will get a stop at the risk below.`
+        : "Nothing to backfill.";
       document.getElementById("bf-btn").disabled = n === 0;
     } catch { document.getElementById("bf-info").textContent = "Could not check trades."; }
-  })();
+  }
+  document.getElementById("bf-overwrite").addEventListener("change", refreshBfInfo);
+  refreshBfInfo();
 
   document.getElementById("bf-btn").addEventListener("click", async () => {
     const risk = parseFloat(document.getElementById("bf-risk").value);
     if (!isFinite(risk) || risk <= 0) { toast("Enter a valid risk amount", "error"); return; }
-    const targets = stopLess(await getClosedTrades());
+    const ov = document.getElementById("bf-overwrite").checked;
+    const targets = targetsFor(await getClosedTrades(), ov);
     if (!targets.length) return;
     if (!confirm(`Set a stop reflecting $${risk} risk on ${targets.length} trade(s)? (Trades that already have a stop are untouched.)`)) return;
     showLoader();
@@ -163,8 +171,8 @@ export async function renderSettings(root) {
         n++;
       }
       document.getElementById("bf-result").innerHTML = `<div class="alert alert-ok">Set stops on ${n} trade(s) at $${risk} risk. R is now computed for all of them.</div>`;
-      document.getElementById("bf-info").textContent = "No stop-less closed trades found.";
-      document.getElementById("bf-btn").disabled = true;
+      document.getElementById("bf-overwrite").checked = false;
+      await refreshBfInfo();
       toast(`Backfilled ${n} stops`, "success");
     } catch (e) {
       document.getElementById("bf-result").innerHTML = `<div class="alert alert-stop">Failed after ${n}: ${e.message}</div>`;
