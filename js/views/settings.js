@@ -1,9 +1,12 @@
-import { getAllTrades, resetAllData } from "../db.js";
+import { getAllTrades, getClosedTrades, getOpenTrades, resetAllData } from "../db.js";
+import { getPricesBatch } from "../data.js";
+import { realizedPnl, openPositionStats } from "../calc.js";
 import { currentUser } from "../auth.js";
-import { showLoader, hideLoader, toast } from "../ui.js";
+import { fmt, getPortfolio, setPortfolio, showLoader, hideLoader, toast } from "../ui.js";
 
 export async function renderSettings(root) {
   const user = currentUser();
+  const base = getPortfolio();
   root.innerHTML = `
     <div class="view-title">⚙️ Settings</div>
 
@@ -11,6 +14,26 @@ export async function renderSettings(root) {
       <div class="section-title">Account</div>
       <div>Signed in as <b>${user.email}</b></div>
       <div class="hint">Your data syncs automatically across every device you sign in on.</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Starting Capital</div>
+      <div class="field" style="max-width:240px">
+        <label>Starting capital ($)</label>
+        <input type="number" id="sc-base" value="${base}" step="500" />
+        <div class="hint">Synced across your devices. Drives equity curve & % returns.</div>
+      </div>
+      <div class="alert alert-ok" style="margin-top:6px">
+        <b>Don't know your starting capital?</b> Import your closed trades first, then
+        enter your <b>current account value</b> below — I'll work it back for you.
+      </div>
+      <div class="field-row" style="max-width:420px">
+        <div class="field"><label>Current account value ($)</label><input type="number" id="sc-current" placeholder="e.g. 14500" step="100" /></div>
+        <div class="field" style="display:flex;align-items:flex-end">
+          <button id="sc-derive" class="btn btn-secondary">Compute starting capital</button>
+        </div>
+      </div>
+      <div id="sc-result"></div>
     </div>
 
     <div class="card">
@@ -42,6 +65,49 @@ export async function renderSettings(root) {
   } catch {
     document.getElementById("data-stats").textContent = "Could not load stats.";
   }
+
+  // ── Starting capital: direct edit ───────────────────────────────────────────
+  document.getElementById("sc-base").addEventListener("change", (e) => {
+    setPortfolio(parseFloat(e.target.value) || 0);
+    toast("Starting capital saved", "success");
+  });
+
+  // ── Starting capital: derive from current balance ───────────────────────────
+  document.getElementById("sc-derive").addEventListener("click", async () => {
+    const current = parseFloat(document.getElementById("sc-current").value);
+    const out = document.getElementById("sc-result");
+    if (!isFinite(current) || current <= 0) { out.innerHTML = `<div class="alert alert-warn">Enter your current account value.</div>`; return; }
+    showLoader();
+    try {
+      const [closed, open] = await Promise.all([getClosedTrades(), getOpenTrades()]);
+      const realized = closed
+        .filter((t) => t.exit_price != null)
+        .reduce((s, t) => s + realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares), 0);
+
+      let unrealized = 0;
+      const syms = [...new Set(open.map((t) => t.symbol))];
+      const prices = syms.length ? await getPricesBatch(syms) : {};
+      for (const t of open) {
+        const cur = prices[t.symbol];
+        if (cur) unrealized += openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, t.shares).pnl;
+      }
+
+      const derived = current - realized - unrealized;
+      setPortfolio(Math.round(derived));
+      document.getElementById("sc-base").value = Math.round(derived);
+
+      out.innerHTML = `
+        <div class="alert alert-ok" style="margin-top:8px">
+          <b>Starting capital set to ${fmt.money(Math.round(derived))}</b><br>
+          <span class="hint">${fmt.money(current)} current − ${fmt.signMoney(realized)} realized${unrealized ? " − " + fmt.signMoney(unrealized) + " open" : ""} = ${fmt.money(Math.round(derived))}</span>
+        </div>`;
+      toast("Starting capital computed & saved", "success");
+    } catch (e) {
+      out.innerHTML = `<div class="alert alert-stop">Failed: ${e.message}</div>`;
+    } finally {
+      hideLoader();
+    }
+  });
 
   const confirmEl = document.getElementById("reset-confirm");
   const btn = document.getElementById("reset-btn");

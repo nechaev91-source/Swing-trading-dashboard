@@ -83,12 +83,21 @@ export async function renderImport(root) {
         ${colSelect("m-notes", "Notes / Setup")}
         <div class="section-title" style="margin-top:14px">Defaults for missing data</div>
         <div class="two-col">
+          <div class="field"><label>Setup (applied to all imported trades)</label>
+            <select id="d-setup">
+              <option value="other">Manual / historical (recommended)</option>
+              <option value="breakout:Cup &amp; Handle">Breakout — Cup &amp; Handle</option>
+              <option value="trend-line:Breakout Buy">Trend Line — Breakout Buy</option>
+              <option value="trend-line:Support Bounce">Trend Line — Support Bounce</option>
+              <option value="trend-pullback">Trend-Pullback</option>
+            </select>
+          </div>
           <div class="field"><label>Default Side</label><select id="d-side"><option>Long</option><option>Short</option></select></div>
-          <div class="field"><label>Default Stop (% from entry)</label><input type="number" id="d-stop" value="5" step="0.5" /></div>
-          <div class="field"><label>Default Target (R:R)</label><input type="number" id="d-rr" value="2" step="0.5" /></div>
-          <div class="field"><label>Default Checklist Score</label><input type="number" id="d-score" value="5" min="0" max="10" /></div>
+          <div class="field"><label>Default Stop (% from entry — blank = no stop)</label><input type="number" id="d-stop" placeholder="no stop" step="0.5" /></div>
+          <div class="field"><label>Default Target (R:R)</label><input type="number" id="d-rr" placeholder="—" step="0.5" /></div>
         </div>
-        <button id="preview-btn" class="btn btn-secondary">Preview Import</button>
+        <div class="hint">Win rate &amp; profit factor work without stops; R-multiple needs one. Map a Stop column if you have it.</div>
+        <button id="preview-btn" class="btn btn-secondary" style="margin-top:10px">Preview Import</button>
       </div>`;
     document.getElementById("preview-btn").addEventListener("click", buildPreview);
   }
@@ -103,9 +112,9 @@ export async function renderImport(root) {
     }
 
     const dSide = document.getElementById("d-side").value;
-    const dStop = num(document.getElementById("d-stop").value);
+    const dStop = num(document.getElementById("d-stop").value);   // NaN = no default stop
     const dRR = num(document.getElementById("d-rr").value);
-    const dScore = parseInt(document.getElementById("d-score").value);
+    const dSetup = document.getElementById("d-setup").value;
 
     const out = [];
     for (const row of parsedRows) {
@@ -119,13 +128,17 @@ export async function renderImport(root) {
       if (dRaw.includes("short")) dir = "Short";
       else if (dRaw.includes("long")) dir = "Long";
 
-      let stop = dir === "Long" ? entry * (1 - dStop / 100) : entry * (1 + dStop / 100);
+      // Stop: from a mapped column, else the default % (if given), else none.
+      let stop = null;
       const stopRaw = num(get(row, "m-stop"));
       if (isFinite(stopRaw)) stop = stopRaw;
+      else if (isFinite(dStop) && dStop > 0) stop = dir === "Long" ? entry * (1 - dStop / 100) : entry * (1 + dStop / 100);
 
-      let target = dir === "Long" ? entry + (entry - stop) * dRR : entry - (stop - entry) * dRR;
+      // Target: from a column, else derived from stop + R:R (only if both exist).
+      let target = null;
       const tgtRaw = num(get(row, "m-target"));
       if (isFinite(tgtRaw)) target = tgtRaw;
+      else if (stop != null && isFinite(dRR) && dRR > 0) target = dir === "Long" ? entry + (entry - stop) * dRR : entry - (stop - entry) * dRR;
 
       const edate = String(get(row, "m-edate") ?? "").trim() || "2024-01-01";
       const exitRaw = num(get(row, "m-exit"));
@@ -134,15 +147,18 @@ export async function renderImport(root) {
       const notes = String(get(row, "m-notes") ?? "").trim();
 
       out.push({ symbol, direction: dir, entry_date: edate, entry_price: entry, shares,
-        stop_loss: +stop.toFixed(2), target: +target.toFixed(2),
-        checklist_score: dScore, setup_notes: notes,
+        stop_loss: stop != null ? +stop.toFixed(2) : null,
+        target: target != null ? +target.toFixed(2) : null,
+        checklist_score: null, grade: null, setup_notes: notes, strategy: dSetup,
         exit_price: exitPrice, exit_date: exitPrice ? xdate : null });
     }
 
     preview = out;
     const rows = out.slice(0, 50).map((r) => `<tr>
       <td class="bold">${esc(r.symbol)}</td><td>${r.direction}</td><td>${esc(r.entry_date)}</td>
-      <td>$${r.entry_price}</td><td>${r.shares}</td><td>$${r.stop_loss}</td><td>$${r.target}</td>
+      <td>$${r.entry_price}</td><td>${r.shares}</td>
+      <td>${r.stop_loss != null ? "$" + r.stop_loss : "—"}</td>
+      <td>${r.target != null ? "$" + r.target : "—"}</td>
       <td>${r.exit_price != null ? "$" + r.exit_price : "—"}</td>
       <td>${r.exit_price ? "closed" : "open"}</td></tr>`).join("");
 

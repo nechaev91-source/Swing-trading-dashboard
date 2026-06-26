@@ -62,6 +62,7 @@ export async function renderDashboard(root) {
     .map((t) => ({
       pnl: realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares),
       r: rMultiple(t.direction, t.entry_price, t.exit_price, t.stop_loss, t.shares),
+      hasStop: t.stop_loss != null && isFinite(t.stop_loss),
       exit: t.exit_date || "",
       setup: setupName(t.strategy),
     }))
@@ -73,7 +74,8 @@ export async function renderDashboard(root) {
   const grossWin = recs.filter((r) => r.pnl > 0).reduce((s, r) => s + r.pnl, 0);
   const grossLoss = Math.abs(recs.filter((r) => r.pnl <= 0).reduce((s, r) => s + r.pnl, 0));
   const profitFactor = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
-  const expectancy = recs.length ? recs.reduce((s, r) => s + r.r, 0) / recs.length : 0;
+  const rBearing = recs.filter((r) => r.hasStop);
+  const expectancy = rBearing.length ? rBearing.reduce((s, r) => s + r.r, 0) / rBearing.length : 0;
   const realizedPnlAll = recs.reduce((s, r) => s + r.pnl, 0);
 
   // win streak (longest run of consecutive wins)
