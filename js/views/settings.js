@@ -55,7 +55,7 @@ export async function renderSettings(root) {
       <div class="section-title">Backfill Stops (historical)</div>
       <div class="hint">Closed trades imported without a stop. Set each one's stop to reflect a fixed dollar risk, so R-based stats work (R = trade P&L ÷ risk). Trades that already have a stop are left untouched.</div>
       <div class="field" style="max-width:220px;margin-top:8px"><label>Risk per trade ($)</label><input type="number" id="bf-risk" value="100" step="10" /></div>
-      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 8px"><input type="checkbox" id="bf-overwrite" style="width:auto" /> Also re-apply to imported trades that already have a stop (fixes a previous backfill)</label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:4px 0 8px"><input type="checkbox" id="bf-overwrite" style="width:auto" /> Also re-apply to trades whose stop = the exit price (fixes an earlier "stop = exit" backfill)</label>
       <div id="bf-info" class="hint">Checking…</div>
       <button id="bf-btn" class="btn btn-secondary" style="margin-top:8px">Backfill stops</button>
       <div id="bf-result"></div>
@@ -136,10 +136,11 @@ export async function renderSettings(root) {
   });
 
   // ── Backfill stops at a fixed $ risk per trade ──────────────────────────────
-  // Default: only stop-less trades. With overwrite: also re-apply to imported
-  // trades that already have a stop (e.g. set by an earlier backfill).
+  // Default: only stop-less trades. With overwrite: also re-apply to trades
+  // whose stop currently equals the exit price (i.e. set by the earlier
+  // "stop = exit" backfill). Real, hand-set stops are left alone.
   const targetsFor = (closed, overwrite) => closed.filter((t) =>
-    t.exit_price != null && (t.stop_loss == null || (overwrite && t.imported)));
+    t.exit_price != null && (t.stop_loss == null || (overwrite && t.stop_loss === t.exit_price)));
   async function refreshBfInfo() {
     try {
       const ov = document.getElementById("bf-overwrite").checked;
