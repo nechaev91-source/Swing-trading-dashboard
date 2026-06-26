@@ -47,7 +47,7 @@ export async function renderJournal(root) {
         <td>${t.exit_date ? esc(t.exit_date) : "—"}</td>
         <td>${t.exit_price != null ? "$" + fmt.num(t.exit_price) : "—"}</td>
         ${pnlCell}${rCell}
-        <td>${t.chart_url ? "📎" : ""}</td>
+        <td>${t.chart_url ? `<span class="chart-view" data-id="${t.id}" title="View chart">📎</span>` : ""}</td>
         <td>${t.status === "open" ? "🟢 Open" : "⚫ Closed"}</td>
       </tr>`;
     }).join("");
@@ -69,6 +69,25 @@ export async function renderJournal(root) {
     renderEditSection(trades);
     renderChartSection(trades);
     renderDeleteSection(trades);
+
+    // click 📎 in the table to view the chart full-size
+    body.querySelectorAll(".chart-view").forEach((s) => s.addEventListener("click", () => {
+      const t = list.find((x) => x.id === s.dataset.id);
+      if (t?.chart_url) openLightbox(t.chart_url);
+    }));
+  }
+
+  function openLightbox(url) {
+    let ov = document.getElementById("chart-lightbox");
+    if (!ov) {
+      ov = document.createElement("div");
+      ov.id = "chart-lightbox";
+      ov.className = "lightbox";
+      ov.innerHTML = `<img alt="chart"><div class="lightbox-close">✕ close</div>`;
+      ov.addEventListener("click", () => ov.remove());
+      document.body.appendChild(ov);
+    }
+    ov.querySelector("img").src = url;
   }
 
   // ── Edit any trade (fix a wrong value, incl. closed trades) ─────────────────
