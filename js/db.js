@@ -45,6 +45,7 @@ export async function addTrade(t) {
     checklist_score: t.checklist_score ?? null,
     grade: t.grade ?? null,
     commission: t.commission ?? 0,
+    imported: t.imported ?? false,
     setup_notes: t.setup_notes || "",
     strategy: t.strategy || "breakout",
     exit_price: null,
@@ -108,6 +109,18 @@ export async function getOpenTrades() {
 export async function getClosedTrades() {
   const snap = await getDocs(query(tradesCol(), where("status", "==", "closed")));
   return rowsFromSnap(snap).sort((a, b) => (a.exit_date < b.exit_date ? 1 : -1));
+}
+
+// ── Delete only imported trades (leave hand-entered ones) ────────────────────
+export async function deleteImportedTrades() {
+  const snap = await getDocs(query(tradesCol(), where("imported", "==", true)));
+  const docs = snap.docs;
+  for (let i = 0; i < docs.length; i += 450) {  // Firestore batch limit is 500
+    const batch = writeBatch(db);
+    docs.slice(i, i + 450).forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+  }
+  return docs.length;
 }
 
 // ── Reset everything ─────────────────────────────────────────────────────────

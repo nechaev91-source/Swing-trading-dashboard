@@ -1,4 +1,4 @@
-import { addTrade, closeTrade } from "../db.js";
+import { addTrade, closeTrade, getAllTrades, deleteImportedTrades } from "../db.js";
 import { showLoader, hideLoader, toast, esc } from "../ui.js";
 
 // Minimal CSV parser (handles quoted fields and commas inside quotes)
@@ -37,12 +37,47 @@ export async function renderImport(root) {
       <div>1. In Google Sheets: <b>File → Download → Comma Separated Values (.csv)</b><br>
            2. Upload the file below<br>3. Map your columns → Preview → Confirm</div>
     </div>
+    <div class="card" id="imported-card">
+      <div class="section-title">Imported trades</div>
+      <div id="imported-info" class="hint">Checking…</div>
+      <button id="clear-imported" class="btn btn-danger btn-sm hidden" style="margin-top:10px">🗑️ Delete imported trades</button>
+      <div class="hint" style="margin-top:8px">Imported trades are tagged separately. Deleting them leaves your hand-entered trades untouched — so you can re-upload a corrected file without resetting everything.</div>
+    </div>
     <div class="card">
       <div class="field"><label>Upload CSV</label><input type="file" id="csv-file" accept=".csv" /></div>
     </div>
     <div id="map-section"></div>
     <div id="preview-section"></div>
   `;
+
+  await refreshImportedCount();
+
+  async function refreshImportedCount() {
+    const info = document.getElementById("imported-info");
+    const btn = document.getElementById("clear-imported");
+    try {
+      const all = await getAllTrades();
+      const n = all.filter((t) => t.imported).length;
+      info.textContent = n ? `${n} imported trade(s) currently in your data.` : "No imported trades yet.";
+      btn.classList.toggle("hidden", n === 0);
+    } catch {
+      info.textContent = "Could not load trade count.";
+    }
+  }
+
+  document.getElementById("clear-imported").addEventListener("click", async () => {
+    if (!confirm("Delete ALL previously imported trades? Hand-entered trades are kept.")) return;
+    showLoader();
+    try {
+      const n = await deleteImportedTrades();
+      toast(`Deleted ${n} imported trade(s)`, "success");
+      await refreshImportedCount();
+    } catch (e) {
+      toast("Delete failed: " + e.message, "error");
+    } finally {
+      hideLoader();
+    }
+  });
 
   document.getElementById("csv-file").addEventListener("change", async (e) => {
     const file = e.target.files[0];
@@ -152,7 +187,8 @@ export async function renderImport(root) {
       out.push({ symbol, direction: dir, entry_date: edate, entry_price: entry, shares,
         stop_loss: stop != null ? +stop.toFixed(2) : null,
         target: target != null ? +target.toFixed(2) : null,
-        checklist_score: null, grade: null, commission, setup_notes: notes, strategy: dSetup,
+        checklist_score: null, grade: null, commission, imported: true,
+        setup_notes: notes, strategy: dSetup,
         exit_price: exitPrice, exit_date: exitPrice ? xdate : null });
     }
 
@@ -195,6 +231,7 @@ export async function renderImport(root) {
       document.getElementById("preview-section").innerHTML =
         `<div class="card"><div class="alert alert-ok">🎉 ${count} trades imported successfully.</div></div>`;
       preview = null;
+      await refreshImportedCount();
     } catch (e) {
       toast(`Imported ${count}, then failed: ${e.message}`, "error");
     } finally {
