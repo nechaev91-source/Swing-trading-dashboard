@@ -131,7 +131,7 @@ export async function renderAnalytics(root) {
     <div class="two-col">
       <div class="card">
         <div class="section-title">R Distribution</div>
-        <div class="hint" style="margin-bottom:8px">How big your wins/losses are in units of risk (R). Only trades that have a stop are counted (R needs an entry-to-stop distance). Healthy systems cut losers near −1R and let winners run to +2R and beyond.</div>
+        <div class="hint" style="margin-bottom:8px">How big your wins/losses are in units of risk (R), each bar rounded to the nearest R (so −1.05R counts as −1R). Only trades with a stop are counted. Healthy systems cut losers near −1R and let winners run to +2R and beyond.</div>
         <canvas id="r-chart" height="120"></canvas>
       </div>
       <div>
@@ -216,11 +216,11 @@ export async function renderAnalytics(root) {
   if (!rs.length) {
     rCanvas.outerHTML = `<div class="hint">No trades with a stop yet — R can't be computed without an entry-to-stop distance. Add stops in New Trade (or via Edit) and this fills in.</div>`;
   } else {
-    const min = Math.floor(Math.min(...rs)), max = Math.ceil(Math.max(...rs));
+    const min = Math.round(Math.min(...rs)), max = Math.round(Math.max(...rs));
     const keys = [];
     for (let b = min; b <= max; b++) keys.push(b);           // explicit numeric order
     const counts = Object.fromEntries(keys.map((b) => [b, 0]));
-    rs.forEach((r) => { const b = Math.max(min, Math.min(max, Math.floor(r))); counts[b]++; });
+    rs.forEach((r) => { const b = Math.max(min, Math.min(max, Math.round(r))); counts[b]++; });  // nearest R
     new Chart(rCanvas, {
       type: "bar",
       data: {
@@ -228,7 +228,7 @@ export async function renderAnalytics(root) {
         datasets: [{ data: keys.map((b) => counts[b]), backgroundColor: keys.map((b) => (b < 0 ? "#f85149" : b === 0 ? "#586274" : "#00d4aa")) }],
       },
       options: {
-        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => `${i[0].label} to ${parseInt(i[0].label) + 1}R`, label: (i) => `${i.parsed.y} trade(s)` } } },
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => { const b = parseInt(i[0].label); return `${(b - 0.5).toFixed(1)}R to ${(b + 0.5).toFixed(1)}R`; }, label: (i) => `${i.parsed.y} trade(s)` } } },
         scales: {
           x: { grid: { color: grid }, ticks: { color: muted } },
           y: { grid: { color: grid }, ticks: { color: muted, stepSize: 1 } },
