@@ -215,17 +215,16 @@ export async function renderDashboard(root) {
         <div class="pl-legend-row"><span class="pl-dot" style="background:${COL.red}"></span><span class="pl-muted">${losses} losses</span></div>
       </div>`;
 
-    // KPIs
-    const grossWin = wr.filter((r) => r.pnl > 0).reduce((s, r) => s + r.pnl, 0);
-    const grossLoss = Math.abs(wr.filter((r) => r.pnl <= 0).reduce((s, r) => s + r.pnl, 0));
-    const pf = grossLoss > 0 ? grossWin / grossLoss : (grossWin > 0 ? Infinity : 0);
-    const rb = wr.filter((r) => r.hasStop);
-    const expectancy = rb.length ? rb.reduce((s, r) => s + r.r, 0) / rb.length : 0;
+    // KPIs — Open P&L (now), Payoff (avg win vs loss), Win streak
     let streak = 0, best = 0;
     for (const r of wr) { if (r.pnl > 0) { streak++; best = Math.max(best, streak); } else streak = 0; }
+    const wW = wr.filter((r) => r.pnl > 0), wL = wr.filter((r) => r.pnl <= 0);
+    const avgWin = wW.length ? wW.reduce((s, r) => s + r.pnl, 0) / wW.length : 0;
+    const avgLoss = wL.length ? wL.reduce((s, r) => s + r.pnl, 0) / wL.length : 0;
+    const payoff = avgLoss !== 0 ? avgWin / Math.abs(avgLoss) : (avgWin > 0 ? Infinity : 0);
     document.getElementById("pl-kpis").innerHTML =
-      kpi("Profit factor", pf === Infinity ? "∞" : pf.toFixed(2), pf >= 1.5 ? "Healthy" : "Needs work", pf >= 1.5 ? COL.green : COL.red) +
-      kpi("Expectancy", (expectancy >= 0 ? "+" : "") + expectancy.toFixed(2) + "R", "per $1 risked", COL.accent) +
+      kpi("Open P&L", `<span style="color:${unrealized >= 0 ? COL.green : COL.red}">${fmt.signMoney(unrealized)}</span>`, `${open.length} open position${open.length === 1 ? "" : "s"}`, unrealized >= 0 ? COL.green : COL.red) +
+      kpi("Payoff", payoff === Infinity ? "∞" : payoff ? payoff.toFixed(2) + "×" : "—", "avg win ÷ avg loss", payoff >= 1 ? COL.green : COL.red) +
       kpi("Win streak", String(best), `${wr.length} closed`, COL.lime);
 
     // setup performance

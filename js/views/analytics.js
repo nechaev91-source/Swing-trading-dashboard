@@ -50,6 +50,7 @@ export async function renderAnalytics(root) {
   const avgLoss = losses ? -grossL / losses : 0;
   const payoff = avgLoss !== 0 ? avgWin / Math.abs(avgLoss) : 0;
   const largestLoss = Math.min(...recs.map((x) => x.pnl));
+  const commPaid = trades.filter((t) => t.exit_price != null).reduce((s, t) => s + (t.commission || 0), 0);
 
   // ── Auto-insights ───────────────────────────────────────────────────────────
   const insights = [];
@@ -148,6 +149,14 @@ export async function renderAnalytics(root) {
             <tr><td class="muted">Largest Win</td><td class="green">${fmt.signMoney(Math.max(...recs.map(x=>x.pnl)))}</td></tr>
             <tr><td class="muted">Largest Loss</td><td class="red">${fmt.signMoney(largestLoss)}</td></tr>
           </tbody></table>
+        </div>
+        <div class="card"><div class="section-title">P&L & Commissions</div>
+          <table><tbody>
+            <tr><td class="muted">Gross P&L (before fees)</td><td class="${colorClass(total + commPaid)}">${fmt.signMoney(total + commPaid)}</td></tr>
+            <tr><td class="muted">Commissions paid</td><td class="red">−${fmt.money(commPaid)}</td></tr>
+            <tr><td class="muted bold">Net P&L</td><td class="${colorClass(total)} bold">${fmt.signMoney(total)}</td></tr>
+          </tbody></table>
+          <div class="hint" style="margin-top:6px">Commissions are subtracted from every trade — all P&L across the app is already net of them.</div>
         </div>
       </div>
     </div>
