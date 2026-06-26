@@ -365,8 +365,8 @@ export async function renderAnalytics(root) {
     L.push("## Monthly net P&L");
     months.forEach((m) => L.push(`${m}: ${byMonthMap[m].toFixed(0)}`));
     L.push("");
-    L.push("## All trades (exit_date | symbol | dir | setup | entry | exit | shares | R | net P&L)");
-    recs.forEach((r) => L.push(`${r.exit_date} | ${r.symbol} | ${r.direction} | ${r.setup} | ${r.entry} | ${r.exit} | ${r.shares} | ${r.hasStop ? r.r.toFixed(2) : "n/a"} | ${r.pnl.toFixed(2)}`));
+    L.push("## All trades (entry_date | exit_date | symbol | dir | setup | entry$ | exit$ | shares | R | net P&L)");
+    recs.forEach((r) => L.push(`${r.entry_date || "?"} | ${r.exit_date || "?"} | ${r.symbol} | ${r.direction} | ${r.setup} | ${r.entry} | ${r.exit} | ${r.shares} | ${r.hasStop ? r.r.toFixed(2) : "n/a"} | ${r.pnl.toFixed(2)}`));
     return L.join("\n");
   }
 
