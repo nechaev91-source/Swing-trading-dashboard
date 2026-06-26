@@ -51,6 +51,28 @@ export async function syncSettingsFromRemote() {
   } catch { /* offline / first run — keep local */ }
 }
 
+// Normalize a date string to ISO YYYY-MM-DD so date comparisons/sorting work.
+// Handles ISO, US slash (M/D/Y), month names (via Date), and European D/M/Y.
+export function normDate(s) {
+  if (!s) return "";
+  s = String(s).trim();
+  if (!s) return "";
+  const fromLocal = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);          // already ISO
+  const d = new Date(s);                                            // ISO+time, US slash, "Jun 18 2026"
+  if (!isNaN(d.getTime()) && /[A-Za-z]|^\d{4}/.test(s)) return fromLocal(d);
+  const m = s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})$/); // D/M/Y or M/D/Y
+  if (m) {
+    let day = +m[1], mon = +m[2], y = m[3];
+    if (mon > 12 && day <= 12) { const t = day; day = mon; mon = t; } // it was M/D
+    if (y.length === 2) y = (+y > 70 ? "19" : "20") + y;
+    if (mon >= 1 && mon <= 12 && day >= 1 && day <= 31)
+      return `${y}-${String(mon).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  if (!isNaN(d.getTime())) return fromLocal(d);
+  return "";
+}
+
 // Escape user text before injecting into innerHTML
 export function esc(s) {
   return String(s ?? "").replace(/[&<>"']/g, (c) =>

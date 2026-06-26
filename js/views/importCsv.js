@@ -1,5 +1,5 @@
 import { addTrade, closeTrade, getAllTrades, deleteImportedTrades } from "../db.js";
-import { showLoader, hideLoader, toast, esc } from "../ui.js";
+import { showLoader, hideLoader, toast, esc, normDate } from "../ui.js";
 
 // Minimal CSV parser (handles quoted fields and commas inside quotes)
 function parseCSV(text) {
@@ -176,10 +176,10 @@ export async function renderImport(root) {
       if (isFinite(tgtRaw)) target = tgtRaw;
       else if (stop != null && isFinite(dRR) && dRR > 0) target = dir === "Long" ? entry + (entry - stop) * dRR : entry - (stop - entry) * dRR;
 
-      const edate = String(get(row, "m-edate") ?? "").trim() || "2024-01-01";
+      const edate = normDate(get(row, "m-edate")) || "2024-01-01";
       const exitRaw = num(get(row, "m-exit"));
       const exitPrice = isFinite(exitRaw) && exitRaw > 0 ? exitRaw : null;
-      const xdate = String(get(row, "m-xdate") ?? "").trim() || null;
+      const xdate = normDate(get(row, "m-xdate")) || null;
       const notes = String(get(row, "m-notes") ?? "").trim();
       const commRaw = num(get(row, "m-commission"));
       const commission = isFinite(commRaw) ? Math.abs(commRaw) : 0;

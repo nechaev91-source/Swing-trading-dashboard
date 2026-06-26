@@ -1,7 +1,7 @@
 import { getOpenTrades, getClosedTrades } from "../db.js";
 import { getPricesBatch } from "../data.js";
 import { openPositionStats, tradeNetPnl, tradeR } from "../calc.js";
-import { fmt, showLoader, hideLoader, getPortfolio, setPortfolio, esc } from "../ui.js";
+import { fmt, showLoader, hideLoader, getPortfolio, setPortfolio, esc, normDate } from "../ui.js";
 import { currentUser } from "../auth.js";
 
 // "Pulse" Overview — landing dashboard. Layout/hierarchy from the Pulse handoff,
@@ -64,7 +64,7 @@ export async function renderDashboard(root) {
       pnl: tradeNetPnl(t),
       r: tradeR(t),
       hasStop: t.stop_loss != null && isFinite(t.stop_loss),
-      exit: t.exit_date || "",
+      exit: normDate(t.exit_date),
       setup: setupName(t.strategy),
     }))
     .sort((a, b) => (a.exit < b.exit ? -1 : 1));
@@ -290,8 +290,21 @@ export async function renderDashboard(root) {
       },
       options: {
         responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: { displayColors: false, callbacks: { title: (i) => i[0].label, label: (i) => fmt.money(i.parsed.y) } } },
-        scales: { x: { display: false }, y: { display: false, grace: "8%" } },
+        plugins: { legend: { display: false }, tooltip: { displayColors: false, callbacks: { title: (i) => i[0].label, label: (i) => "Equity " + fmt.money(i.parsed.y) } } },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: "#8b949e", font: { size: 10 }, maxTicksLimit: 6, maxRotation: 0, autoSkip: true },
+          },
+          y: {
+            grace: "8%",
+            grid: { color: "#21262d" },
+            ticks: {
+              color: "#8b949e", font: { size: 10 }, maxTicksLimit: 5,
+              callback: (v) => (Math.abs(v) >= 1000 ? "$" + (v / 1000).toFixed(1) + "k" : "$" + v),
+            },
+          },
+        },
       },
     });
   }
