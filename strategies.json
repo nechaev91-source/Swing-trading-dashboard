@@ -17,6 +17,21 @@
           { "question": "Is the sector ETF in an uptrend (above 50-day MA)?", "category": "Market Context", "critical": false, "auto_key": "sector_above_50ma" },
           { "question": "No earnings report within the next 3 weeks?", "category": "Risk", "critical": false, "auto_key": "no_earnings_3w" }
         ]
+      },
+      {
+        "name": "Breakout Retest",
+        "items": [
+          { "question": "Did the stock recently break out above a clear resistance / pivot on strong volume?", "category": "Pattern", "critical": true, "auto_key": null },
+          { "question": "Is price now pulling back to retest that breakout level (former resistance → support)?", "category": "Setup", "critical": true, "auto_key": null },
+          { "question": "Is the pullback on lighter volume than the breakout day (no heavy selling)?", "category": "Volume", "critical": false, "auto_key": null },
+          { "question": "Is the retest holding — price staying above the breakout level, not closing back inside the base?", "category": "Setup", "critical": true, "auto_key": null },
+          { "question": "Bullish reversal candle at the retest level (hammer / engulfing / doji + green)?", "category": "Entry Timing", "critical": true, "auto_key": null },
+          { "question": "Is volume expanding on the bounce off the retest? (check on TradingView)", "category": "Volume", "critical": false, "auto_key": null },
+          { "question": "Is the S&P 500 in a confirmed uptrend (above 50-day MA)?", "category": "Market Context", "critical": false, "auto_key": "spy_above_50ma" },
+          { "question": "Is the stock's Relative Strength line at or near new highs?", "category": "Relative Strength", "critical": false, "auto_key": "rs_near_high" },
+          { "question": "Is the sector ETF in an uptrend (above 50-day MA)?", "category": "Market Context", "critical": false, "auto_key": "sector_above_50ma" },
+          { "question": "No earnings report within the next 3 weeks?", "category": "Risk", "critical": false, "auto_key": "no_earnings_3w" }
+        ]
       }
     ]
   },
