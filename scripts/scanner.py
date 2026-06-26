@@ -24,7 +24,6 @@ import yfinance as yf
 import backtest as bt
 from backtest import rsi, atr
 
-WATCHLIST = bt.BASKET          # reuse the basket; edit freely
 RISK_DOLLARS = 120.0           # hard max loss per trade (buy-limit sizing)
 ACCOUNT = 10_000.0
 LOOKBACK_DAYS = 400            # enough history for SMA200
@@ -39,6 +38,44 @@ def load_recent(tk):
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = df.columns.get_level_values(0)
     return df[["Open", "High", "Low", "Close"]].dropna()
+
+
+def get_universe():
+    """Full S&P 500 ticker list (live from Wikipedia). Falls back to the
+    20-stock basket if the fetch fails, so the scanner never goes dark."""
+    try:
+        import requests
+        from io import StringIO
+        url = "https://en.wikipedia.org/wiki/List_of_S%26P_500_companies"
+        html = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30).text
+        df = pd.read_html(StringIO(html))[0]
+        tickers = df["Symbol"].astype(str).str.replace(".", "-", regex=False).tolist()
+        return sorted(set(tickers))
+    except Exception:
+        return list(bt.BASKET)
+
+
+def download_universe(tickers):
+    """Batch-download recent OHLC for the whole universe (50 at a time)."""
+    data = {}
+    B = 50
+    for k in range(0, len(tickers), B):
+        batch = tickers[k:k + B]
+        try:
+            raw = yf.download(batch, period=f"{LOOKBACK_DAYS}d", interval="1d",
+                              progress=False, auto_adjust=True,
+                              group_by="ticker", threads=True)
+        except Exception:
+            continue
+        for tk in batch:
+            try:
+                df = raw if len(batch) == 1 else raw[tk]
+                df = df[["Open", "High", "Low", "Close"]].dropna()
+                if len(df) >= 210:
+                    data[tk] = df
+            except Exception:
+                pass
+    return data
 
 
 def market_riskon():
@@ -102,9 +139,10 @@ def scan(mode="trend"):
     ro = market_riskon()
     if ro is False:
         return ro, []
+    universe = get_universe()
+    data = download_universe(universe)
     hits = []
-    for tk in WATCHLIST:
-        df = load_recent(tk)
+    for tk, df in data.items():
         if df is None or len(df) < 210:
             continue
         res = sig_fn(df)
