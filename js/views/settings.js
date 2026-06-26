@@ -1,6 +1,6 @@
-import { getAllTrades, getClosedTrades, getOpenTrades, resetAllData } from "../db.js";
+import { getAllTrades, getClosedTrades, getOpenTrades, resetAllData, updateTrade } from "../db.js";
 import { getPricesBatch } from "../data.js";
-import { tradeNetPnl, openPositionStats } from "../calc.js";
+import { tradeNetPnl, openPositionStats, realizedPnl } from "../calc.js";
 import { currentUser } from "../auth.js";
 import { fmt, getPortfolio, setPortfolio, getCommission, setCommission, showLoader, hideLoader, toast } from "../ui.js";
 
@@ -49,6 +49,14 @@ export async function renderSettings(root) {
     <div class="card">
       <div class="section-title">Data</div>
       <div id="data-stats" class="hint">Loading…</div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Backfill Stops (historical)</div>
+      <div class="hint">For closed <b>losing</b> trades with no stop recorded, set the stop = exit price — i.e. assume they were stopped out at −1R. Makes R-based stats meaningful. Skips winners and any trade that already has a stop.</div>
+      <div id="bf-info" class="hint" style="margin-top:8px">Checking…</div>
+      <button id="bf-btn" class="btn btn-secondary" style="margin-top:8px">Backfill stops for losing trades</button>
+      <div id="bf-result"></div>
     </div>
 
     <div class="card">
@@ -123,6 +131,38 @@ export async function renderSettings(root) {
     } finally {
       hideLoader();
     }
+  });
+
+  // ── Backfill stops for stop-less losing trades ──────────────────────────────
+  function losingNoStop(closed) {
+    return closed.filter((t) => t.exit_price != null && t.stop_loss == null &&
+      realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares) < 0);
+  }
+  (async () => {
+    try {
+      const targets = losingNoStop(await getClosedTrades());
+      document.getElementById("bf-info").textContent = targets.length
+        ? `${targets.length} closed losing trade(s) have no stop — these will get stop = exit (−1R).`
+        : "No stop-less losing trades found.";
+      document.getElementById("bf-btn").disabled = targets.length === 0;
+    } catch { document.getElementById("bf-info").textContent = "Could not check trades."; }
+  })();
+
+  document.getElementById("bf-btn").addEventListener("click", async () => {
+    const targets = losingNoStop(await getClosedTrades());
+    if (!targets.length) return;
+    if (!confirm(`Set stop = exit price on ${targets.length} losing trade(s)? (Winners and trades with a stop are untouched.)`)) return;
+    showLoader();
+    let n = 0;
+    try {
+      for (const t of targets) { await updateTrade(t.id, { stop_loss: t.exit_price, current_stop: t.exit_price }); n++; }
+      document.getElementById("bf-result").innerHTML = `<div class="alert alert-ok">Set stops on ${n} losing trade(s) — each now registers as −1R.</div>`;
+      document.getElementById("bf-info").textContent = "No stop-less losing trades found.";
+      document.getElementById("bf-btn").disabled = true;
+      toast(`Backfilled ${n} stops`, "success");
+    } catch (e) {
+      document.getElementById("bf-result").innerHTML = `<div class="alert alert-stop">Failed after ${n}: ${e.message}</div>`;
+    } finally { hideLoader(); }
   });
 
   const confirmEl = document.getElementById("reset-confirm");
