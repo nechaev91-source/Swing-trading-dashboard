@@ -1,6 +1,6 @@
 import { getOpenTrades, getClosedTrades } from "../db.js";
 import { getPricesBatch } from "../data.js";
-import { openPositionStats, realizedPnl, rMultiple } from "../calc.js";
+import { openPositionStats, tradeNetPnl, tradeR } from "../calc.js";
 import { fmt, showLoader, hideLoader, getPortfolio, setPortfolio, esc } from "../ui.js";
 import { currentUser } from "../auth.js";
 
@@ -60,8 +60,8 @@ export async function renderDashboard(root) {
   const recs = closed
     .filter((t) => t.exit_price != null)
     .map((t) => ({
-      pnl: realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares),
-      r: rMultiple(t.direction, t.entry_price, t.exit_price, t.stop_loss, t.shares),
+      pnl: tradeNetPnl(t),
+      r: tradeR(t),
       hasStop: t.stop_loss != null && isFinite(t.stop_loss),
       exit: t.exit_date || "",
       setup: setupName(t.strategy),

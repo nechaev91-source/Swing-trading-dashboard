@@ -1,5 +1,5 @@
 import { getAllTrades, closeTrade, deleteTrade, saveChartUrl } from "../db.js";
-import { realizedPnl, rMultiple } from "../calc.js";
+import { realizedPnl, tradeNetPnl, tradeR } from "../calc.js";
 import { fmt, colorClass, showLoader, hideLoader, toast, esc, compressImage } from "../ui.js";
 
 export async function renderJournal(root) {
@@ -34,8 +34,8 @@ export async function renderJournal(root) {
     const rows = list.map((t) => {
       let pnlCell = `<td class="muted">—</td>`, rCell = `<td class="muted">—</td>`;
       if (t.status === "closed" && t.exit_price != null) {
-        const pnl = realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares);
-        const r = rMultiple(t.direction, t.entry_price, t.exit_price, t.stop_loss, t.shares);
+        const pnl = tradeNetPnl(t);
+        const r = tradeR(t);
         pnlCell = `<td class="${colorClass(pnl)} bold">${fmt.signMoney(pnl)}</td>`;
         rCell = `<td class="${colorClass(r)}">${r.toFixed(2)}R</td>`;
       }
@@ -95,10 +95,11 @@ export async function renderJournal(root) {
       const t = openTrades.find((x) => x.id === sel.value);
       const exit = parseFloat(priceEl.value);
       if (!t || !isFinite(exit)) { document.getElementById("close-preview").textContent = ""; return; }
-      const pnl = realizedPnl(t.direction, t.entry_price, exit, t.shares);
-      const r = rMultiple(t.direction, t.entry_price, exit, t.stop_loss, t.shares);
+      const pnl = realizedPnl(t.direction, t.entry_price, exit, t.shares) - (t.commission || 0);
+      const risk = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
+      const r = risk ? pnl / risk : 0;
       document.getElementById("close-preview").innerHTML =
-        `<span class="${colorClass(pnl)}">Preview: ${fmt.signMoney(pnl)} | ${r >= 0 ? "+" : ""}${r.toFixed(2)}R</span>`;
+        `<span class="${colorClass(pnl)}">Preview: ${fmt.signMoney(pnl)} (net of $${(t.commission || 0).toFixed(2)} comm) | ${r >= 0 ? "+" : ""}${r.toFixed(2)}R</span>`;
     }
     sel.addEventListener("change", () => {
       const t = openTrades.find((x) => x.id === sel.value);

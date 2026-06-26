@@ -80,6 +80,7 @@ export async function renderImport(root) {
           </div>
         </div>
         ${colSelect("m-xdate", "Exit Date")}
+        ${colSelect("m-commission", "Commission (round trip, buy+sell)")}
         ${colSelect("m-notes", "Notes / Setup")}
         <div class="section-title" style="margin-top:14px">Defaults for missing data</div>
         <div class="two-col">
@@ -145,11 +146,13 @@ export async function renderImport(root) {
       const exitPrice = isFinite(exitRaw) && exitRaw > 0 ? exitRaw : null;
       const xdate = String(get(row, "m-xdate") ?? "").trim() || null;
       const notes = String(get(row, "m-notes") ?? "").trim();
+      const commRaw = num(get(row, "m-commission"));
+      const commission = isFinite(commRaw) ? Math.abs(commRaw) : 0;
 
       out.push({ symbol, direction: dir, entry_date: edate, entry_price: entry, shares,
         stop_loss: stop != null ? +stop.toFixed(2) : null,
         target: target != null ? +target.toFixed(2) : null,
-        checklist_score: null, grade: null, setup_notes: notes, strategy: dSetup,
+        checklist_score: null, grade: null, commission, setup_notes: notes, strategy: dSetup,
         exit_price: exitPrice, exit_date: exitPrice ? xdate : null });
     }
 

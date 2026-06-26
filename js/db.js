@@ -15,6 +15,12 @@ export async function getUserSetting(key, fallback = null) {
   return snap.exists() && snap.data()[key] != null ? snap.data()[key] : fallback;
 }
 
+export async function getUserSettings() {
+  const ref = doc(db, "users", currentUser().uid, "settings", "app");
+  const snap = await getDoc(ref);
+  return snap.exists() ? snap.data() : {};
+}
+
 export async function setUserSetting(key, value) {
   const ref = doc(db, "users", currentUser().uid, "settings", "app");
   await setDoc(ref, { [key]: value }, { merge: true });
@@ -38,6 +44,7 @@ export async function addTrade(t) {
     target: t.target ?? null,
     checklist_score: t.checklist_score ?? null,
     grade: t.grade ?? null,
+    commission: t.commission ?? 0,
     setup_notes: t.setup_notes || "",
     strategy: t.strategy || "breakout",
     exit_price: null,

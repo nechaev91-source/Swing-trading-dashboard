@@ -63,7 +63,10 @@ export async function renderPositions(root) {
               <div class="field"><label>Shares</label><input type="number" step="1" id="ed-shares-${t.id}" value="${t.shares}"></div>
               <div class="field"><label>Stop Loss $ (optional)</label><input type="number" step="0.01" id="ed-stop-${t.id}" value="${t.stop_loss ?? ""}"></div>
             </div>
-            <div class="field"><label>Target $ (optional)</label><input type="number" step="0.01" id="ed-target-${t.id}" value="${t.target ?? ""}"></div>
+            <div class="field-row">
+              <div class="field"><label>Target $ (optional)</label><input type="number" step="0.01" id="ed-target-${t.id}" value="${t.target ?? ""}"></div>
+              <div class="field"><label>Commission $ (round trip)</label><input type="number" step="0.5" id="ed-comm-${t.id}" value="${t.commission ?? 0}"></div>
+            </div>
             <div class="pos-actions">
               <button class="btn btn-primary btn-sm save-edit" data-id="${t.id}">Save Changes</button>
               <button class="btn btn-ghost btn-sm cancel-edit" data-id="${t.id}">Cancel</button>
@@ -104,12 +107,14 @@ export async function renderPositions(root) {
       if (entry == null || entry <= 0 || shares == null || shares <= 0) { toast("Entry and shares must be positive", "error"); return; }
       const stop = num(document.getElementById(`ed-stop-${id}`).value);
       const target = num(document.getElementById(`ed-target-${id}`).value);
+      const comm = num(document.getElementById(`ed-comm-${id}`).value);
       const fields = {
         entry_date: document.getElementById(`ed-date-${id}`).value,
         entry_price: entry,
         shares,
         stop_loss: (stop != null && stop > 0) ? stop : null,
         target: (target != null && target > 0) ? target : null,
+        commission: (comm != null && comm >= 0) ? comm : 0,
       };
       // keep current_stop sensible if it was tracking the (old) initial stop
       const t = trades.find((x) => x.id === id);

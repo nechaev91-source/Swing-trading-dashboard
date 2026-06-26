@@ -1,12 +1,13 @@
 import { getAllTrades, getClosedTrades, getOpenTrades, resetAllData } from "../db.js";
 import { getPricesBatch } from "../data.js";
-import { realizedPnl, openPositionStats } from "../calc.js";
+import { tradeNetPnl, openPositionStats } from "../calc.js";
 import { currentUser } from "../auth.js";
-import { fmt, getPortfolio, setPortfolio, showLoader, hideLoader, toast } from "../ui.js";
+import { fmt, getPortfolio, setPortfolio, getCommission, setCommission, showLoader, hideLoader, toast } from "../ui.js";
 
 export async function renderSettings(root) {
   const user = currentUser();
   const base = getPortfolio();
+  const comm = getCommission();
   root.innerHTML = `
     <div class="view-title">⚙️ Settings</div>
 
@@ -34,6 +35,15 @@ export async function renderSettings(root) {
         </div>
       </div>
       <div id="sc-result"></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Commissions</div>
+      <div class="field" style="max-width:300px">
+        <label>Default commission per trade — round trip ($)</label>
+        <input type="number" id="cm-rate" value="${comm}" step="0.5" />
+        <div class="hint">Applied automatically to new trades (e.g. $1.5 buy + $1.5 sell = $3). Subtracted from net P&L. For imports, map a Commission column. Edit a trade to change its commission.</div>
+      </div>
     </div>
 
     <div class="card">
@@ -72,6 +82,12 @@ export async function renderSettings(root) {
     toast("Starting capital saved", "success");
   });
 
+  // ── Commission rate ─────────────────────────────────────────────────────────
+  document.getElementById("cm-rate").addEventListener("change", (e) => {
+    setCommission(parseFloat(e.target.value) || 0);
+    toast("Commission saved", "success");
+  });
+
   // ── Starting capital: derive from current balance ───────────────────────────
   document.getElementById("sc-derive").addEventListener("click", async () => {
     const current = parseFloat(document.getElementById("sc-current").value);
@@ -82,7 +98,7 @@ export async function renderSettings(root) {
       const [closed, open] = await Promise.all([getClosedTrades(), getOpenTrades()]);
       const realized = closed
         .filter((t) => t.exit_price != null)
-        .reduce((s, t) => s + realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares), 0);
+        .reduce((s, t) => s + tradeNetPnl(t), 0);
 
       let unrealized = 0;
       const syms = [...new Set(open.map((t) => t.symbol))];

@@ -1,5 +1,5 @@
 import { getClosedTrades } from "../db.js";
-import { realizedPnl, rMultiple } from "../calc.js";
+import { tradeNetPnl, tradeR } from "../calc.js";
 import { fmt, colorClass, showLoader, hideLoader, esc } from "../ui.js";
 
 export async function renderAnalytics(root) {
@@ -18,8 +18,8 @@ export async function renderAnalytics(root) {
 
   // Build records, oldest first for equity curve
   const recs = trades.map((t) => {
-    const pnl = realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares);
-    const r = rMultiple(t.direction, t.entry_price, t.exit_price, t.stop_loss, t.shares);
+    const pnl = tradeNetPnl(t);
+    const r = tradeR(t);
     return { symbol: t.symbol, direction: t.direction, exit_date: t.exit_date, pnl, r, won: pnl > 0, score: t.checklist_score };
   }).sort((a, b) => (a.exit_date < b.exit_date ? -1 : 1));
 

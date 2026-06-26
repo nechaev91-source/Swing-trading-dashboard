@@ -21,22 +21,33 @@ export const fmt = {
 
 export function colorClass(n) { return n >= 0 ? "green" : "red"; }
 
-// Portfolio base (starting capital). Cached in localStorage for synchronous reads,
-// but the source of truth is Firestore so it syncs across devices.
-import { getUserSetting, setUserSetting } from "./db.js";
+// App settings (starting capital, commission). Cached in localStorage for
+// synchronous reads; source of truth is Firestore so they sync across devices.
+import { getUserSettings, setUserSetting } from "./db.js";
 
 export function getPortfolio() {
   return parseFloat(localStorage.getItem("portfolio_value") || "10000");
 }
 export function setPortfolio(v) {
   localStorage.setItem("portfolio_value", String(v));
-  setUserSetting("portfolio_value", v).catch(() => {});  // sync to other devices
+  setUserSetting("portfolio_value", v).catch(() => {});
 }
-// Pull the saved value from Firestore into the local cache (call once after login).
-export async function syncPortfolioFromRemote() {
+
+// Default round-trip commission applied to new trades ($1.5 buy + $1.5 sell).
+export function getCommission() {
+  return parseFloat(localStorage.getItem("commission_rt") || "3");
+}
+export function setCommission(v) {
+  localStorage.setItem("commission_rt", String(v));
+  setUserSetting("commission_rt", v).catch(() => {});
+}
+
+// Pull saved settings from Firestore into the local cache (call once after login).
+export async function syncSettingsFromRemote() {
   try {
-    const v = await getUserSetting("portfolio_value", null);
-    if (v != null && isFinite(v)) localStorage.setItem("portfolio_value", String(v));
+    const s = await getUserSettings();
+    if (s.portfolio_value != null && isFinite(s.portfolio_value)) localStorage.setItem("portfolio_value", String(s.portfolio_value));
+    if (s.commission_rt != null && isFinite(s.commission_rt)) localStorage.setItem("commission_rt", String(s.commission_rt));
   } catch { /* offline / first run — keep local */ }
 }
 

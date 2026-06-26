@@ -41,6 +41,21 @@ export function rMultiple(side, entry, exit, stop, shares) {
   return risk !== 0 ? pnl / risk : 0;
 }
 
+// ── Trade-level helpers that include commission ──────────────────────────────
+// A closed trade's initial dollar risk (0 if no stop).
+export function tradeRisk(t) {
+  return (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
+}
+// Net realized P&L = gross − round-trip commission.
+export function tradeNetPnl(t) {
+  return realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares) - (t.commission || 0);
+}
+// R-multiple on net P&L (0 if no stop).
+export function tradeR(t) {
+  const risk = tradeRisk(t);
+  return risk ? tradeNetPnl(t) / risk : 0;
+}
+
 // Live (open) position P&L and R, plus stop/target flags
 export function openPositionStats(side, entry, current, stop, target, shares) {
   const hasStop = stop != null && isFinite(stop);

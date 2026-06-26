@@ -1,7 +1,7 @@
 import { addTrade, saveChartUrl } from "../db.js";
 import { getCurrentPrice, getAutoChecklistData, SECTOR_ETFS } from "../data.js";
 import { tradeMetrics, gradeSetup, gradeColor } from "../calc.js";
-import { fmt, getPortfolio, getStrategies, compressImage, showLoader, hideLoader, toast, esc } from "../ui.js";
+import { fmt, getPortfolio, getCommission, getStrategies, compressImage, showLoader, hideLoader, toast, esc } from "../ui.js";
 import { SETTINGS } from "../config.js";
 
 const TREND_RISK = 120; // hard max loss per trade for the mechanical Trend-Pullback strategy
@@ -297,6 +297,7 @@ export async function renderNewTrade(root) {
           grade: g.grade,
           setup_notes: $("f-notes").value,
           strategy: `${strategyId}:${checklistName}`,
+          commission: getCommission(),
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Trade saved — grade ${g.grade}, ${m.shares.toFixed(0)} shares, risk $${m.riskDollar.toFixed(2)}`, "success");
@@ -410,6 +411,7 @@ export async function renderNewTrade(root) {
           checklist_score: null,
           setup_notes: $("tp-notes").value || `Trend-Pullback. Limit: ${entry}, Stop: ${stop}`,
           strategy: "trend-pullback",
+          commission: getCommission(),
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Trade saved — ${shares} shares, limit $${entry.toFixed(2)}, stop $${stop.toFixed(2)}`, "success");
@@ -509,6 +511,7 @@ export async function renderNewTrade(root) {
           grade: null,
           setup_notes: $("mn-notes").value,
           strategy: "other",
+          commission: getCommission(),
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Manual trade ${$("mn-symbol").value.trim().toUpperCase()} added`, "success");
