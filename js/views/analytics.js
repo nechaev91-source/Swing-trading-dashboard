@@ -73,6 +73,12 @@ export async function renderAnalytics(root) {
     return isFinite(d) && d >= 0 ? d : null;
   }).filter((v) => v != null);
   const avgHold = holds.length ? holds.reduce((a, b) => a + b, 0) / holds.length : null;
+  const sortedHolds = [...holds].sort((a, b) => a - b);
+  const medHold = sortedHolds.length
+    ? (sortedHolds.length % 2
+        ? sortedHolds[(sortedHolds.length - 1) / 2]
+        : (sortedHolds[sortedHolds.length / 2 - 1] + sortedHolds[sortedHolds.length / 2]) / 2)
+    : null;
 
   // Breakeven win rate (the win % you need given your payoff)
   const breakevenWr = payoff > 0 ? (1 / (1 + payoff)) * 100 : null;
@@ -176,7 +182,7 @@ export async function renderAnalytics(root) {
       ${kpi("MAX DRAWDOWN", "-" + fmt.money(maxDD), `${maxDDpct.toFixed(1)}% peak-to-trough`, "red")}
       ${kpi("RECOVERY FACTOR", recoveryFactor === Infinity ? "∞" : recoveryFactor.toFixed(2), "profit ÷ max drawdown", recoveryFactor >= 2 ? "green" : "")}
       ${kpi("RETURN ON CAPITAL", (roc >= 0 ? "+" : "") + roc.toFixed(1) + "%", "net P&L vs starting capital", colorClass(roc))}
-      ${kpi("AVG HOLD", avgHold == null ? "—" : avgHold.toFixed(1) + "d", "days per trade", "")}
+      ${kpi("MEDIAN HOLD", medHold == null ? "—" : medHold.toFixed(0) + "d", avgHold == null ? "typical trade" : `avg ${avgHold.toFixed(0)}d — outliers skew avg`, "")}
       ${kpi("BREAKEVEN WIN%", breakevenWr == null ? "—" : breakevenWr.toFixed(1) + "%", `you need this; you have ${wr.toFixed(0)}%`, wr >= (breakevenWr || 0) ? "green" : "red")}
     </div>
 
@@ -348,7 +354,7 @@ export async function renderAnalytics(root) {
     L.push(`Starting capital: ${fmt.money(base)} | Return on capital: ${roc.toFixed(1)}%`);
     L.push(`Max drawdown: -${fmt.money(maxDD)} (${maxDDpct.toFixed(1)}%) | Recovery factor: ${recoveryFactor === Infinity ? "inf" : recoveryFactor.toFixed(2)}`);
     L.push(`Avg win: ${fmt.signMoney(avgWin)} | Avg loss: ${fmt.signMoney(avgLoss)} | Payoff: ${payoff.toFixed(2)}x | Largest loss: ${fmt.signMoney(largestLoss)}`);
-    L.push(`Avg hold: ${avgHold == null ? "n/a" : avgHold.toFixed(1) + " days"} | Max win streak: ${maxWStreak} | Max loss streak: ${maxLStreak} | R std-dev: ${rSd.toFixed(2)}R`);
+    L.push(`Hold time — median: ${medHold == null ? "n/a" : medHold.toFixed(0) + "d"}, avg: ${avgHold == null ? "n/a" : avgHold.toFixed(0) + "d"} (a few long 'waiting to recover' trades skew the average) | Max win streak: ${maxWStreak} | Max loss streak: ${maxLStreak} | R std-dev: ${rSd.toFixed(2)}R`);
     L.push("");
     L.push("## By setup (setup | trades | net P&L | win% | avg R)");
     groupStats(recs, (x) => x.setup).forEach((g) => L.push(`${g.k} | ${g.n} | ${g.pnl.toFixed(0)} | ${g.wr.toFixed(0)}% | ${g.r.toFixed(2)}`));
