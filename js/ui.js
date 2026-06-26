@@ -89,3 +89,47 @@ export function compressImage(file, maxWidth = 1200, quality = 0.7) {
     reader.readAsDataURL(file);
   });
 }
+
+// HTML for a "paste or upload" chart picker. `p` is an id prefix.
+export function chartPickerHTML(p, label = "Chart Screenshot (optional)") {
+  return `<div class="field"><label>${label}</label>
+    <div class="chart-paste" id="${p}-paste" tabindex="0">
+      <span class="chart-paste-hint">📋 Click here & press <b>Ctrl+V</b> to paste a chart,
+        <button type="button" class="btn btn-secondary btn-sm chart-paste-btn" id="${p}-pastebtn">Paste</button>
+        or <label class="chart-file-label">choose a file<input type="file" id="${p}-file" accept="image/*" hidden></label></span>
+    </div>
+    <div id="${p}-preview"></div>
+  </div>`;
+}
+
+// Wire a chart picker (paste event + Paste button + file input) to a callback.
+// Calls onImage(dataUrl) when a valid image is supplied.
+export function wireChartPicker(p, onImage) {
+  const el = (s) => document.getElementById(`${p}-${s}`);
+  const preview = el("preview");
+  const handle = async (blob) => {
+    if (!blob) return;
+    try {
+      const url = await compressImage(blob);
+      if (url.length > 900000) { toast("Image too large even after compression", "error"); return; }
+      preview.innerHTML = `<img src="${url}" class="chart-thumb" />`;
+      onImage(url);
+    } catch { toast("Could not read image", "error"); }
+  };
+  el("file").addEventListener("change", (e) => handle(e.target.files[0]));
+  el("paste").addEventListener("paste", (e) => {
+    const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+    if (item) { e.preventDefault(); handle(item.getAsFile()); }
+  });
+  el("pastebtn").addEventListener("click", async () => {
+    if (!navigator.clipboard?.read) { el("paste").focus(); toast("Press Ctrl+V inside the box, or choose a file", "error"); return; }
+    try {
+      const items = await navigator.clipboard.read();
+      for (const item of items) {
+        const type = item.types.find((t) => t.startsWith("image/"));
+        if (type) { handle(await item.getType(type)); return; }
+      }
+      toast("No image found in clipboard", "error");
+    } catch { toast("Clipboard access blocked — press Ctrl+V inside the box", "error"); }
+  });
+}

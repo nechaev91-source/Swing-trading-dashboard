@@ -1,7 +1,7 @@
 import { addTrade, saveChartUrl } from "../db.js";
 import { getCurrentPrice, getAutoChecklistData, SECTOR_ETFS } from "../data.js";
 import { tradeMetrics, gradeSetup, gradeColor } from "../calc.js";
-import { fmt, getPortfolio, getCommission, getStrategies, compressImage, showLoader, hideLoader, toast, esc } from "../ui.js";
+import { fmt, getPortfolio, getCommission, getStrategies, chartPickerHTML, wireChartPicker, showLoader, hideLoader, toast, esc } from "../ui.js";
 import { SETTINGS } from "../config.js";
 
 const TREND_RISK = 120; // hard max loss per trade for the mechanical Trend-Pullback strategy
@@ -89,7 +89,7 @@ export async function renderNewTrade(root) {
               <div class="field"><label>Max Risk $ (loss I accept)</label><input type="number" id="f-risk" value="200" step="10" /></div>
             </div>
             <div class="field"><label>Setup Description</label><textarea id="f-notes" placeholder="Pattern, timeframe, confluence…"></textarea></div>
-            <div class="field"><label>Chart Screenshot (optional)</label><input type="file" id="f-chart" accept="image/*" /><div id="chart-preview"></div></div>
+            ${chartPickerHTML("fc")}
             <button id="check-price" class="btn btn-secondary btn-sm">Check Live Price</button>
             <div id="price-result" class="hint"></div>
           </div>
@@ -201,21 +201,8 @@ export async function renderNewTrade(root) {
         ${lowRisk}`;
     }
 
-    // ── Chart upload ──────────────────────────────────────────────────────────
-    $("f-chart").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) { chartDataUrl = null; $("chart-preview").innerHTML = ""; return; }
-      try {
-        chartDataUrl = await compressImage(file);
-        if (chartDataUrl.length > 900000) {
-          toast("Image too large even after compression — use a smaller screenshot", "error");
-          chartDataUrl = null; $("chart-preview").innerHTML = ""; return;
-        }
-        $("chart-preview").innerHTML = `<img src="${chartDataUrl}" class="chart-thumb" />`;
-      } catch {
-        toast("Could not read image", "error");
-      }
-    });
+    // ── Chart picker (paste or upload) ────────────────────────────────────────
+    wireChartPicker("fc", (url) => { chartDataUrl = url; });
 
     // ── Live price ────────────────────────────────────────────────────────────
     $("check-price").addEventListener("click", async () => {
@@ -346,7 +333,7 @@ export async function renderNewTrade(root) {
         </div>
         <div class="field"><label>Notes (optional)</label>
           <textarea id="tp-notes" placeholder="e.g. Scanned 2026-06-18, regime risk-on"></textarea></div>
-        <div class="field"><label>Chart Screenshot (optional)</label><input type="file" id="tp-chart" accept="image/*" /><div id="tp-chart-preview"></div></div>
+        ${chartPickerHTML("tp")}
       </div>
       <div class="card" style="max-width:520px;margin-top:16px">
         <div class="section-title">Position Summary</div>
@@ -359,16 +346,7 @@ export async function renderNewTrade(root) {
     document.getElementById("tp-date").value = new Date().toISOString().slice(0, 10);
     const $ = (id) => document.getElementById(id);
     let chartDataUrl = null;
-
-    $("tp-chart").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) { chartDataUrl = null; $("tp-chart-preview").innerHTML = ""; return; }
-      try {
-        chartDataUrl = await compressImage(file);
-        if (chartDataUrl.length > 900000) { toast("Image too large", "error"); chartDataUrl = null; $("tp-chart-preview").innerHTML = ""; return; }
-        $("tp-chart-preview").innerHTML = `<img src="${chartDataUrl}" class="chart-thumb" />`;
-      } catch { toast("Could not read image", "error"); }
-    });
+    wireChartPicker("tp", (url) => { chartDataUrl = url; });
 
     function recomputeTP() {
       const entry = parseFloat($("tp-entry").value) || 0;
@@ -450,7 +428,7 @@ export async function renderNewTrade(root) {
           <div class="field"><label>Target $ (optional)</label><input type="number" id="mn-target" placeholder="—" step="0.01" /></div>
         </div>
         <div class="field"><label>Notes (optional)</label><textarea id="mn-notes" placeholder="Why this trade?"></textarea></div>
-        <div class="field"><label>Chart Screenshot (optional)</label><input type="file" id="mn-chart" accept="image/*" /><div id="mn-chart-preview"></div></div>
+        ${chartPickerHTML("mn")}
       </div>
       <div class="card" style="max-width:560px;margin-top:16px">
         <div class="section-title">Summary</div>
@@ -462,16 +440,7 @@ export async function renderNewTrade(root) {
     document.getElementById("mn-date").value = new Date().toISOString().slice(0, 10);
     const $ = (id) => document.getElementById(id);
     let chartDataUrl = null;
-
-    $("mn-chart").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) { chartDataUrl = null; $("mn-chart-preview").innerHTML = ""; return; }
-      try {
-        chartDataUrl = await compressImage(file);
-        if (chartDataUrl.length > 900000) { toast("Image too large", "error"); chartDataUrl = null; $("mn-chart-preview").innerHTML = ""; return; }
-        $("mn-chart-preview").innerHTML = `<img src="${chartDataUrl}" class="chart-thumb" />`;
-      } catch { toast("Could not read image", "error"); }
-    });
+    wireChartPicker("mn", (url) => { chartDataUrl = url; });
 
     function recompute() {
       const side = $("mn-side").value;

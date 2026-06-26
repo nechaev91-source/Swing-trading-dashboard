@@ -1,6 +1,6 @@
 import { getAllTrades, closeTrade, deleteTrade, saveChartUrl, updateTrade } from "../db.js";
 import { realizedPnl, tradeNetPnl, tradeR } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, toast, esc, compressImage } from "../ui.js";
+import { fmt, colorClass, showLoader, hideLoader, toast, esc, chartPickerHTML, wireChartPicker } from "../ui.js";
 
 export async function renderJournal(root) {
   root.innerHTML = `
@@ -217,7 +217,7 @@ export async function renderJournal(root) {
         <div class="section-title">📎 Attach / View Chart</div>
         <div class="field"><label>Select trade</label><select id="chart-sel">${opts}</select></div>
         <div id="chart-current"></div>
-        <div class="field"><label>Upload chart image (PNG/JPG)</label><input type="file" id="chart-file" accept="image/*" /></div>
+        ${chartPickerHTML("jchart", "Add / replace chart (paste or upload)")}
       </div>`;
 
     const sel = document.getElementById("chart-sel");
@@ -229,21 +229,13 @@ export async function renderJournal(root) {
     sel.addEventListener("change", showCurrent);
     showCurrent();
 
-    document.getElementById("chart-file").addEventListener("change", async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+    wireChartPicker("jchart", async (url) => {
       showLoader();
       try {
-        const dataUrl = await compressImage(file);
-        // ~0.75 bytes per base64 char; warn if close to Firestore's 1 MB limit
-        if (dataUrl.length > 900000) {
-          toast("Image too large even after compression — try a smaller screenshot", "error");
-          return;
-        }
-        await saveChartUrl(sel.value, dataUrl);
+        await saveChartUrl(sel.value, url);
         toast("Chart saved", "success");
         renderJournal(root);
-      } catch (err) { toast("Upload failed: " + err.message, "error"); }
+      } catch (err) { toast("Save failed: " + err.message, "error"); }
       finally { hideLoader(); }
     });
   }

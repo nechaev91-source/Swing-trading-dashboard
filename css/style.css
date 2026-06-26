@@ -207,6 +207,14 @@ tr:hover td { background: var(--surface); }
 .toast.error { border-color: var(--red); }
 
 .chart-thumb { max-width: 100%; border-radius: 8px; border: 1px solid var(--border); margin-top: 10px; }
+.chart-paste {
+  border: 1px dashed var(--border); border-radius: 8px; padding: 14px;
+  background: var(--bg); color: var(--muted); font-size: 13px; cursor: text; outline: none;
+}
+.chart-paste:focus { border-color: var(--accent); }
+.chart-paste-hint { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.chart-paste-btn { width: auto !important; }
+.chart-file-label { color: var(--accent); cursor: pointer; text-decoration: underline; }
 .spacer { height: 18px; }
 canvas { max-width: 100%; }
 
