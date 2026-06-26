@@ -1,6 +1,6 @@
 import { getAllTrades, getClosedTrades, getOpenTrades, resetAllData, updateTrade } from "../db.js";
 import { getPricesBatch } from "../data.js";
-import { tradeNetPnl, openPositionStats, realizedPnl } from "../calc.js";
+import { tradeNetPnl, openPositionStats } from "../calc.js";
 import { currentUser } from "../auth.js";
 import { fmt, getPortfolio, setPortfolio, getCommission, setCommission, showLoader, hideLoader, toast } from "../ui.js";
 
@@ -53,9 +53,10 @@ export async function renderSettings(root) {
 
     <div class="card">
       <div class="section-title">Backfill Stops (historical)</div>
-      <div class="hint">For closed <b>losing</b> trades with no stop recorded, set the stop = exit price — i.e. assume they were stopped out at −1R. Makes R-based stats meaningful. Skips winners and any trade that already has a stop.</div>
-      <div id="bf-info" class="hint" style="margin-top:8px">Checking…</div>
-      <button id="bf-btn" class="btn btn-secondary" style="margin-top:8px">Backfill stops for losing trades</button>
+      <div class="hint">Closed trades imported without a stop. Set each one's stop to reflect a fixed dollar risk, so R-based stats work (R = trade P&L ÷ risk). Trades that already have a stop are left untouched.</div>
+      <div class="field" style="max-width:220px;margin-top:8px"><label>Risk per trade ($)</label><input type="number" id="bf-risk" value="100" step="10" /></div>
+      <div id="bf-info" class="hint">Checking…</div>
+      <button id="bf-btn" class="btn btn-secondary" style="margin-top:8px">Backfill stops</button>
       <div id="bf-result"></div>
     </div>
 
@@ -133,31 +134,36 @@ export async function renderSettings(root) {
     }
   });
 
-  // ── Backfill stops for stop-less losing trades ──────────────────────────────
-  function losingNoStop(closed) {
-    return closed.filter((t) => t.exit_price != null && t.stop_loss == null &&
-      realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares) < 0);
-  }
+  // ── Backfill stops at a fixed $ risk per trade ──────────────────────────────
+  const stopLess = (closed) => closed.filter((t) => t.exit_price != null && t.stop_loss == null);
   (async () => {
     try {
-      const targets = losingNoStop(await getClosedTrades());
-      document.getElementById("bf-info").textContent = targets.length
-        ? `${targets.length} closed losing trade(s) have no stop — these will get stop = exit (−1R).`
-        : "No stop-less losing trades found.";
-      document.getElementById("bf-btn").disabled = targets.length === 0;
+      const n = stopLess(await getClosedTrades()).length;
+      document.getElementById("bf-info").textContent = n
+        ? `${n} closed trade(s) have no stop — these will get a stop at the risk below.`
+        : "No stop-less closed trades found.";
+      document.getElementById("bf-btn").disabled = n === 0;
     } catch { document.getElementById("bf-info").textContent = "Could not check trades."; }
   })();
 
   document.getElementById("bf-btn").addEventListener("click", async () => {
-    const targets = losingNoStop(await getClosedTrades());
+    const risk = parseFloat(document.getElementById("bf-risk").value);
+    if (!isFinite(risk) || risk <= 0) { toast("Enter a valid risk amount", "error"); return; }
+    const targets = stopLess(await getClosedTrades());
     if (!targets.length) return;
-    if (!confirm(`Set stop = exit price on ${targets.length} losing trade(s)? (Winners and trades with a stop are untouched.)`)) return;
+    if (!confirm(`Set a stop reflecting $${risk} risk on ${targets.length} trade(s)? (Trades that already have a stop are untouched.)`)) return;
     showLoader();
     let n = 0;
     try {
-      for (const t of targets) { await updateTrade(t.id, { stop_loss: t.exit_price, current_stop: t.exit_price }); n++; }
-      document.getElementById("bf-result").innerHTML = `<div class="alert alert-ok">Set stops on ${n} losing trade(s) — each now registers as −1R.</div>`;
-      document.getElementById("bf-info").textContent = "No stop-less losing trades found.";
+      for (const t of targets) {
+        const perShare = risk / t.shares;
+        let stop = t.direction === "Long" ? t.entry_price - perShare : t.entry_price + perShare;
+        stop = Math.max(0.01, +stop.toFixed(2));
+        await updateTrade(t.id, { stop_loss: stop, current_stop: stop });
+        n++;
+      }
+      document.getElementById("bf-result").innerHTML = `<div class="alert alert-ok">Set stops on ${n} trade(s) at $${risk} risk. R is now computed for all of them.</div>`;
+      document.getElementById("bf-info").textContent = "No stop-less closed trades found.";
       document.getElementById("bf-btn").disabled = true;
       toast(`Backfilled ${n} stops`, "success");
     } catch (e) {
