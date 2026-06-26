@@ -131,7 +131,7 @@ export async function renderAnalytics(root) {
     <div class="two-col">
       <div class="card">
         <div class="section-title">R Distribution</div>
-        <div class="hint" style="margin-bottom:8px">How big your wins and losses are in units of risk (R). Healthy systems cut losers near −1R and let winners run to +2R and beyond — a long right tail.</div>
+        <div class="hint" style="margin-bottom:8px">How big your wins/losses are in units of risk (R). Only trades that have a stop are counted (R needs an entry-to-stop distance). Healthy systems cut losers near −1R and let winners run to +2R and beyond.</div>
         <canvas id="r-chart" height="120"></canvas>
       </div>
       <div>
@@ -211,24 +211,29 @@ export async function renderAnalytics(root) {
     },
   });
 
-  const rs = recs.map((x) => x.r);
-  const min = Math.floor(Math.min(...rs)), max = Math.ceil(Math.max(...rs));
-  const bins = {};
-  for (let b = min; b < max; b++) bins[b] = 0;
-  rs.forEach((r) => { const b = Math.floor(r); bins[b] = (bins[b] || 0) + 1; });
-
-  new Chart(document.getElementById("r-chart"), {
-    type: "bar",
-    data: {
-      labels: Object.keys(bins).map((b) => `${b}R`),
-      datasets: [{ data: Object.values(bins), backgroundColor: Object.keys(bins).map((b) => (+b < 0 ? "#f85149" : "#00d4aa")) }],
-    },
-    options: {
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => `${i.parsed.y} trade(s)` } } },
-      scales: {
-        x: { grid: { color: grid }, ticks: { color: muted } },
-        y: { grid: { color: grid }, ticks: { color: muted, stepSize: 1 } },
+  const rCanvas = document.getElementById("r-chart");
+  const rs = recs.filter((x) => x.hasStop).map((x) => x.r);
+  if (!rs.length) {
+    rCanvas.outerHTML = `<div class="hint">No trades with a stop yet — R can't be computed without an entry-to-stop distance. Add stops in New Trade (or via Edit) and this fills in.</div>`;
+  } else {
+    const min = Math.floor(Math.min(...rs)), max = Math.ceil(Math.max(...rs));
+    const keys = [];
+    for (let b = min; b <= max; b++) keys.push(b);           // explicit numeric order
+    const counts = Object.fromEntries(keys.map((b) => [b, 0]));
+    rs.forEach((r) => { const b = Math.max(min, Math.min(max, Math.floor(r))); counts[b]++; });
+    new Chart(rCanvas, {
+      type: "bar",
+      data: {
+        labels: keys.map((b) => `${b >= 0 ? "+" : ""}${b}R`),
+        datasets: [{ data: keys.map((b) => counts[b]), backgroundColor: keys.map((b) => (b < 0 ? "#f85149" : b === 0 ? "#586274" : "#00d4aa")) }],
       },
-    },
-  });
+      options: {
+        plugins: { legend: { display: false }, tooltip: { callbacks: { title: (i) => `${i[0].label} to ${parseInt(i[0].label) + 1}R`, label: (i) => `${i.parsed.y} trade(s)` } } },
+        scales: {
+          x: { grid: { color: grid }, ticks: { color: muted } },
+          y: { grid: { color: grid }, ticks: { color: muted, stepSize: 1 } },
+        },
+      },
+    });
+  }
 }
