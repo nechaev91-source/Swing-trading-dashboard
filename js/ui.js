@@ -79,11 +79,12 @@ export function esc(s) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
-// Load strategies.json once and cache it
+// Load strategies.json once per session. `no-store` avoids the browser/CDN
+// serving a stale cached copy, so checklist edits appear on the next reload.
 let _strategies = null;
 export async function getStrategies() {
   if (!_strategies) {
-    const res = await fetch("strategies.json");
+    const res = await fetch("strategies.json", { cache: "no-store" });
     _strategies = await res.json();
   }
   return _strategies;
