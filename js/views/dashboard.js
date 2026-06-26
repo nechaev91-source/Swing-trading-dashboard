@@ -88,12 +88,13 @@ export async function renderDashboard(root) {
   for (const r of recs) { cum += r.pnl; curve.push({ date: r.exit, equity: cum }); }
 
   // ── Open-trade stats ────────────────────────────────────────────────────────
-  let unrealized = 0, deployed = 0;
+  let unrealized = 0, deployed = 0, costBasis = 0;
   const positions = [];
   for (const t of open) {
     const cur = prices[t.symbol];
     const mv = (cur || t.entry_price) * t.shares;
     deployed += mv;
+    costBasis += t.entry_price * t.shares;
     let chg = null;
     if (cur) {
       const s = openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, t.shares);
@@ -198,7 +199,7 @@ export async function renderDashboard(root) {
               : `<div class="pl-muted">No open exposure</div>`}
           </div>
         </div>
-        <div class="pl-cash">💵 Cash <b>${fmt.money(cashDollar)}</b> · Invested ${fmt.money(deployed)}</div>
+        <div class="pl-cash">💵 Cash <b>${fmt.money(cashDollar)}</b> · Holdings ${fmt.money(deployed)} <span class="pl-faint">(at market · cost ${fmt.money(costBasis)})</span></div>
       </div>
 
       <!-- KPIs -->
