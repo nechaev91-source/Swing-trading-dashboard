@@ -56,5 +56,16 @@
   <div id="toast" class="toast hidden"></div>
 
   <script type="module" src="js/app.js"></script>
+  <script>
+    // Always-fresh app files (avoids stale GitHub Pages cache); reload once when
+    // a new version takes control.
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return; reloaded = true; location.reload();
+      });
+    }
+  </script>
 </body>
 </html>
