@@ -1,6 +1,6 @@
 import { getClosedTrades } from "../db.js";
 import { tradeNetPnl, tradeR } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, esc } from "../ui.js";
+import { fmt, colorClass, showLoader, hideLoader, esc, getPortfolio, toast } from "../ui.js";
 
 function setupName(strategy) {
   if (!strategy) return "Other";
@@ -28,7 +28,8 @@ export async function renderAnalytics(root) {
   }
 
   const recs = trades.filter((t) => t.exit_price != null).map((t) => ({
-    symbol: t.symbol, direction: t.direction, exit_date: t.exit_date,
+    symbol: t.symbol, direction: t.direction, entry_date: t.entry_date, exit_date: t.exit_date,
+    entry: t.entry_price, exit: t.exit_price, shares: t.shares, commission: t.commission || 0,
     pnl: tradeNetPnl(t), r: tradeR(t), hasStop: t.stop_loss != null && isFinite(t.stop_loss),
     won: tradeNetPnl(t) > 0, score: t.checklist_score, setup: setupName(t.strategy),
   })).sort((a, b) => (a.exit_date < b.exit_date ? -1 : 1));
@@ -50,7 +51,52 @@ export async function renderAnalytics(root) {
   const avgLoss = losses ? -grossL / losses : 0;
   const payoff = avgLoss !== 0 ? avgWin / Math.abs(avgLoss) : 0;
   const largestLoss = Math.min(...recs.map((x) => x.pnl));
-  const commPaid = trades.filter((t) => t.exit_price != null).reduce((s, t) => s + (t.commission || 0), 0);
+  const commPaid = recs.reduce((s, x) => s + x.commission, 0);
+
+  // ── Tier-1 advanced metrics ─────────────────────────────────────────────────
+  const base = getPortfolio();
+  // Max drawdown on account equity
+  let acct = base, peak = base, maxDD = 0, maxDDpct = 0;
+  for (const r of recs) {
+    acct += r.pnl;
+    if (acct > peak) peak = acct;
+    const dd = peak - acct;
+    if (dd > maxDD) { maxDD = dd; maxDDpct = peak > 0 ? (dd / peak) * 100 : 0; }
+  }
+  const recoveryFactor = maxDD > 0 ? total / maxDD : (total > 0 ? Infinity : 0);
+  const roc = base > 0 ? (total / base) * 100 : 0;
+
+  // Average hold time (days)
+  const holds = recs.map((r) => {
+    const e = new Date(r.entry_date), x = new Date(r.exit_date);
+    const d = (x - e) / 86400000;
+    return isFinite(d) && d >= 0 ? d : null;
+  }).filter((v) => v != null);
+  const avgHold = holds.length ? holds.reduce((a, b) => a + b, 0) / holds.length : null;
+
+  // Breakeven win rate (the win % you need given your payoff)
+  const breakevenWr = payoff > 0 ? (1 / (1 + payoff)) * 100 : null;
+
+  // Streaks
+  let curW = 0, curL = 0, maxWStreak = 0, maxLStreak = 0;
+  for (const r of recs) {
+    if (r.won) { curW++; curL = 0; maxWStreak = Math.max(maxWStreak, curW); }
+    else { curL++; curW = 0; maxLStreak = Math.max(maxLStreak, curL); }
+  }
+  let curStreak = 0, curStreakType = recs.length ? (recs[recs.length - 1].won ? "W" : "L") : "";
+  for (let i = recs.length - 1; i >= 0; i--) {
+    if ((recs[i].won ? "W" : "L") === curStreakType) curStreak++; else break;
+  }
+
+  // R consistency (std dev of R over stopped trades)
+  const rArr = rB.map((x) => x.r);
+  const rSd = rArr.length > 1
+    ? Math.sqrt(rArr.reduce((s, v) => s + (v - avgR) ** 2, 0) / (rArr.length - 1)) : 0;
+
+  // Monthly P&L
+  const byMonthMap = {};
+  recs.forEach((r) => { const m = (r.exit_date || "").slice(0, 7); if (m) byMonthMap[m] = (byMonthMap[m] || 0) + r.pnl; });
+  const months = Object.keys(byMonthMap).sort();
 
   // ── Auto-insights ───────────────────────────────────────────────────────────
   const insights = [];
@@ -109,6 +155,10 @@ export async function renderAnalytics(root) {
       <div class="value ${color}">${val}</div><div class="sub">${sub}</div></div>`;
 
   body.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button id="an-export" class="btn btn-secondary btn-sm">📋 Copy stats for AI</button>
+    </div>
+
     <div class="card">
       <div class="section-title">What this tells you</div>
       ${insights.map(([t, msg]) => `<div class="alert ${t === "ok" ? "alert-ok" : t === "warn" ? "alert-warn" : ""}" style="${t ? "" : "background:var(--bg);border-left:3px solid var(--border)"}">${msg}</div>`).join("")}
@@ -122,10 +172,32 @@ export async function renderAnalytics(root) {
       ${kpi("TOTAL P&L", fmt.signMoney(total), "net of commissions", colorClass(total))}
     </div>
 
+    <div class="cards-grid" style="grid-template-columns:repeat(5,1fr)">
+      ${kpi("MAX DRAWDOWN", "-" + fmt.money(maxDD), `${maxDDpct.toFixed(1)}% peak-to-trough`, "red")}
+      ${kpi("RECOVERY FACTOR", recoveryFactor === Infinity ? "∞" : recoveryFactor.toFixed(2), "profit ÷ max drawdown", recoveryFactor >= 2 ? "green" : "")}
+      ${kpi("RETURN ON CAPITAL", (roc >= 0 ? "+" : "") + roc.toFixed(1) + "%", "net P&L vs starting capital", colorClass(roc))}
+      ${kpi("AVG HOLD", avgHold == null ? "—" : avgHold.toFixed(1) + "d", "days per trade", "")}
+      ${kpi("BREAKEVEN WIN%", breakevenWr == null ? "—" : breakevenWr.toFixed(1) + "%", `you need this; you have ${wr.toFixed(0)}%`, wr >= (breakevenWr || 0) ? "green" : "red")}
+    </div>
+
+    <div class="cards-grid" style="grid-template-columns:repeat(5,1fr)">
+      ${kpi("WIN STREAK (MAX)", String(maxWStreak), "longest run of wins", "green")}
+      ${kpi("LOSS STREAK (MAX)", String(maxLStreak), "longest run of losses", "red")}
+      ${kpi("CURRENT STREAK", curStreak ? `${curStreak}${curStreakType}` : "—", "your run right now", curStreakType === "W" ? "green" : curStreakType === "L" ? "red" : "")}
+      ${kpi("R CONSISTENCY", "±" + rSd.toFixed(2) + "R", "std-dev of R (lower = steadier)", "")}
+      ${kpi("EXPECTANCY $", fmt.signMoney(n ? total / n : 0), "avg net $ per trade", colorClass(total))}
+    </div>
+
     <div class="card">
       <div class="section-title">Equity Curve</div>
       <div class="hint" style="margin-bottom:8px">Your cumulative P&L over time. You want a line that climbs steadily from bottom-left to top-right; deep, jagged drops mean inconsistent risk.</div>
       <canvas id="eq-chart" height="90"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Monthly P&L</div>
+      <div class="hint" style="margin-bottom:8px">Net profit/loss by month (by exit date). Look for consistency — a few green months carrying many red ones is fragile.</div>
+      <canvas id="month-chart" height="90"></canvas>
     </div>
 
     <div class="two-col">
@@ -236,4 +308,75 @@ export async function renderAnalytics(root) {
       },
     });
   }
+
+  // ── Monthly P&L chart ───────────────────────────────────────────────────────
+  if (months.length) {
+    new Chart(document.getElementById("month-chart"), {
+      type: "bar",
+      data: {
+        labels: months,
+        datasets: [{ data: months.map((m) => byMonthMap[m]), backgroundColor: months.map((m) => (byMonthMap[m] >= 0 ? "#3fb950" : "#f85149")) }],
+      },
+      options: {
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: (i) => fmt.signMoney(i.parsed.y) } } },
+        scales: {
+          x: { grid: { color: grid }, ticks: { color: muted } },
+          y: { grid: { color: grid }, ticks: { color: muted, callback: (v) => (Math.abs(v) >= 1000 ? "$" + (v / 1000).toFixed(1) + "k" : "$" + v) } },
+        },
+      },
+    });
+  }
+
+  // ── Export for any AI chat ──────────────────────────────────────────────────
+  function groupStats(rows, keyFn) {
+    const g = {};
+    rows.forEach((x) => (g[keyFn(x)] ||= []).push(x));
+    return Object.entries(g).map(([k, a]) => {
+      const rb = a.filter((x) => x.hasStop);
+      return { k, n: a.length, pnl: a.reduce((s, x) => s + x.pnl, 0), wr: a.filter((x) => x.won).length / a.length * 100, r: rb.length ? rb.reduce((s, x) => s + x.r, 0) / rb.length : 0 };
+    }).sort((a, b) => b.pnl - a.pnl);
+  }
+
+  function buildExport() {
+    const L = [];
+    L.push("You are an expert swing-trading coach. Below is my complete closed-trade history and performance metrics. Analyze it and give me: (1) what's working, (2) my single biggest weakness, (3) specific, prioritized improvements I can act on, (4) any patterns or biases I'm missing. Be direct and tie every point to the numbers.");
+    L.push("");
+    L.push("## Overall");
+    L.push(`Trades: ${n} (${wins}W / ${losses}L) | Win rate: ${wr.toFixed(1)}% | Breakeven win rate needed: ${breakevenWr == null ? "n/a" : breakevenWr.toFixed(1) + "%"}`);
+    L.push(`Profit factor: ${pf === Infinity ? "inf" : pf.toFixed(2)} | Expectancy: ${avgR.toFixed(2)}R (${fmt.signMoney(n ? total / n : 0)}/trade)`);
+    L.push(`Net P&L: ${fmt.signMoney(total)} | Gross: ${fmt.signMoney(total + commPaid)} | Commissions: -${fmt.money(commPaid)}`);
+    L.push(`Starting capital: ${fmt.money(base)} | Return on capital: ${roc.toFixed(1)}%`);
+    L.push(`Max drawdown: -${fmt.money(maxDD)} (${maxDDpct.toFixed(1)}%) | Recovery factor: ${recoveryFactor === Infinity ? "inf" : recoveryFactor.toFixed(2)}`);
+    L.push(`Avg win: ${fmt.signMoney(avgWin)} | Avg loss: ${fmt.signMoney(avgLoss)} | Payoff: ${payoff.toFixed(2)}x | Largest loss: ${fmt.signMoney(largestLoss)}`);
+    L.push(`Avg hold: ${avgHold == null ? "n/a" : avgHold.toFixed(1) + " days"} | Max win streak: ${maxWStreak} | Max loss streak: ${maxLStreak} | R std-dev: ${rSd.toFixed(2)}R`);
+    L.push("");
+    L.push("## By setup (setup | trades | net P&L | win% | avg R)");
+    groupStats(recs, (x) => x.setup).forEach((g) => L.push(`${g.k} | ${g.n} | ${g.pnl.toFixed(0)} | ${g.wr.toFixed(0)}% | ${g.r.toFixed(2)}`));
+    L.push("");
+    L.push("## By direction (dir | trades | net P&L | win% | avg R)");
+    groupStats(recs, (x) => x.direction).forEach((g) => L.push(`${g.k} | ${g.n} | ${g.pnl.toFixed(0)} | ${g.wr.toFixed(0)}% | ${g.r.toFixed(2)}`));
+    L.push("");
+    L.push("## Monthly net P&L");
+    months.forEach((m) => L.push(`${m}: ${byMonthMap[m].toFixed(0)}`));
+    L.push("");
+    L.push("## All trades (exit_date | symbol | dir | setup | entry | exit | shares | R | net P&L)");
+    recs.forEach((r) => L.push(`${r.exit_date} | ${r.symbol} | ${r.direction} | ${r.setup} | ${r.entry} | ${r.exit} | ${r.shares} | ${r.hasStop ? r.r.toFixed(2) : "n/a"} | ${r.pnl.toFixed(2)}`));
+    return L.join("\n");
+  }
+
+  document.getElementById("an-export").addEventListener("click", async () => {
+    const text = buildExport();
+    try {
+      await navigator.clipboard.writeText(text);
+      toast("Stats copied — paste into any AI chat", "success");
+    } catch {
+      const blob = new Blob([text], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "trading-stats.txt";
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast("Clipboard blocked — downloaded as a file instead", "error");
+    }
+  });
 }
