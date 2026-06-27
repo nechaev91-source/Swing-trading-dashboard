@@ -228,6 +228,17 @@ export async function getAutoChecklistData(symbol, sectorEtf, opts = {}) {
     detail.spy_error = e.message;
   }
 
+  // 20-day MA distance (for the 20-MA Pullback strategy)
+  if (stockSeries && stockSeries.length >= 20) {
+    const last = stockSeries[0].close;
+    const ma20 = smaAt(stockSeries, 20);
+    if (ma20 != null) {
+      const pct = (last / ma20 - 1) * 100;
+      signals.below_20ma = last < ma20;
+      detail.ma20 = `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs 20MA $${ma20.toFixed(2)} (${last < ma20 ? "below" : "above"})`;
+    }
+  }
+
   // Stock SMA structure (200 trend, 50 trend, momentum stack) — from stockSeries
   if (stockSeries && stockSeries.length >= 200) {
     const last = stockSeries[0].close;

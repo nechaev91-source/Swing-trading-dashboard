@@ -13,6 +13,7 @@ const AUTO_LABELS = {
   stock_above_200ma_rising: ["Stock above rising 200 SMA", "stock200"],
   stock_above_50ma_rising:  ["Stock above rising 50 SMA", "stock50"],
   stock_momentum_stack:     ["Momentum stack (Price>50>200)", "stack"],
+  below_20ma:               ["Distance from 20-day MA", "ma20"],
   rs_near_high:             ["Relative Strength at new highs", "rs"],
   near_high:                ["Within 5% of 52-week high", "52w_high"],
   sector_above_50ma:        ["Sector ETF above 50-day MA", "sector"],

@@ -69,5 +69,23 @@
         ]
       }
     ]
+  },
+  "ma20-pullback": {
+    "label": "📉 20-MA Pullback",
+    "sector": false,
+    "checklists": [
+      {
+        "name": "20-MA Pullback",
+        "items": [
+          { "question": "Reversal in trend: the stock has been declining over the past week/month — a falling stock is the positive sign, since we want the bounce up.", "category": "Trend", "critical": false, "auto_key": null },
+          { "question": "Reversal candle present (doji, bullish harami, hammer, marubozu, bullish engulfing, etc.).", "category": "Candle", "critical": true, "auto_key": null },
+          { "question": "Selling volume is drying up into the decline — exhaustion that signals a turn.", "category": "Volume", "critical": true, "auto_key": null },
+          { "question": "Stock is stretched below its 20-day MA (the MA acts as an upward magnet), or the stock is being supported by the 20-day MA.", "category": "Distance", "critical": true, "auto_key": "below_20ma" },
+          { "question": "Unfilled gap(s) above or below acting as a magnet to pull price.", "category": "Support tool", "critical": false, "auto_key": null },
+          { "question": "CCI oversold (below −100) and starting to curl back up.", "category": "Support tool", "critical": false, "auto_key": null },
+          { "question": "The reversal candle is forming on a support / trendline / Fibonacci level.", "category": "Support tool", "critical": false, "auto_key": null }
+        ]
+      }
+    ]
   }
 }

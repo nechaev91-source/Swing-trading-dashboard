@@ -8,6 +8,7 @@ function stratLabel(strategy) {
   if (id === "trend-pullback") return ["Trend-Pullback", "#3fb950"];
   if (id === "trend-line") return [sub || "Trend Line", "#58a6ff"];
   if (id === "breakout") return [sub || "Breakout", "#58a6ff"];
+  if (id === "ma20-pullback") return ["20-MA Pullback", "#d29922"];
   if (id === "other") return ["Manual", "#8b949e"];
   return [id, "#8b949e"];
 }
