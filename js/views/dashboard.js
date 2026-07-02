@@ -83,12 +83,13 @@ export async function renderDashboard(root) {
     const cur = prices[t.symbol];
     deployed += (cur || t.entry_price) * t.shares;
     costBasis += t.entry_price * t.shares;
-    let chg = null;
+    let chg = null, pnl = null;
     if (cur) {
-      unrealized += openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, t.shares).pnl;
+      pnl = openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, t.shares).pnl;
+      unrealized += pnl;
       chg = ((cur - t.entry_price) / t.entry_price) * 100 * (t.direction === "Short" ? -1 : 1);
     }
-    positions.push({ sym: t.symbol, shares: t.shares, entry: t.entry_price, chg });
+    positions.push({ sym: t.symbol, shares: t.shares, entry: t.entry_price, chg, pnl });
   }
   const portfolioValue = portfolioBase + realizedAll + unrealized;
   const cashDollar = Math.max(0, portfolioValue - deployed);
@@ -162,7 +163,10 @@ export async function renderDashboard(root) {
             <div class="pl-open-row">
               <div class="pl-tile">${esc(p.sym.slice(0, 2))}</div>
               <div><div class="pl-open-sym">${esc(p.sym)}</div><div class="pl-faint">${p.shares} sh · $${fmt.num(p.entry)}</div></div>
-              <div class="pl-open-chg ${p.chg == null ? "pl-muted" : p.chg >= 0 ? "up" : "down"}">${p.chg == null ? "—" : (p.chg >= 0 ? "+" : "") + p.chg.toFixed(1) + "%"}</div>
+              <div class="pl-open-chg ${p.pnl == null ? "pl-muted" : p.pnl >= 0 ? "up" : "down"}" style="text-align:right">
+                ${p.pnl == null ? "—" : fmt.signMoney(p.pnl)}
+                ${p.chg == null ? "" : `<div class="pl-faint" style="font-weight:400">${(p.chg >= 0 ? "+" : "") + p.chg.toFixed(1)}%</div>`}
+              </div>
             </div>`).join("")
             : `<div class="pl-muted">No open positions. Add one in New Trade.</div>`}
         </div>

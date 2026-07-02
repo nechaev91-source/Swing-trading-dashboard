@@ -16,17 +16,19 @@ export function sharesFromRisk(maxRisk, rps) {
   return maxRisk / rps;
 }
 
-// Full trade metrics used by the New Trade screen
-export function tradeMetrics({ side, entry, stop, target, maxRisk, portfolio }) {
+// Full trade metrics used by the New Trade screen.
+// `shares` optional — when omitted, size from maxRisk; when given, use that count.
+export function tradeMetrics({ side, entry, stop, target, maxRisk, portfolio, shares }) {
   const rps = riskPerShare(side, entry, stop);
   const rwps = rewardPerShare(side, entry, target);
-  const shares = Math.round(sharesFromRisk(maxRisk, rps) * 10) / 10;
-  const riskDollar = rps > 0 ? rps * shares : 0;
-  const rewardDollar = Math.max(rwps, 0) * shares;
+  const computedShares = Math.round(sharesFromRisk(maxRisk, rps) * 10) / 10;
+  const sh = (shares != null && isFinite(shares) && shares > 0) ? shares : computedShares;
+  const riskDollar = rps > 0 ? rps * sh : 0;
+  const rewardDollar = Math.max(rwps, 0) * sh;
   const rr = rps > 0 ? rwps / rps : 0;
-  const positionSize = entry * shares;
+  const positionSize = entry * sh;
   const riskPct = portfolio > 0 ? (riskDollar / portfolio) * 100 : 0;
-  return { rps, rwps, shares, riskDollar, rewardDollar, rr, positionSize, riskPct };
+  return { rps, rwps, shares: sh, computedShares, riskDollar, rewardDollar, rr, positionSize, riskPct };
 }
 
 // Realized P&L for a closed trade

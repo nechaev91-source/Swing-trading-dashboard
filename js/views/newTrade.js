@@ -87,8 +87,9 @@ export async function renderNewTrade(root) {
             </div>
             <div class="field-row">
               <div class="field"><label>Target $</label><input type="number" id="f-target" value="110" step="0.01" /></div>
-              <div class="field"><label>Max Risk $ (loss I accept)</label><input type="number" id="f-risk" value="200" step="10" /></div>
+              <div class="field"><label>Max Risk $ (loss I accept)</label><input type="number" id="f-risk" value="100" step="10" /></div>
             </div>
+            <div class="field"><label>Shares to buy (auto from risk — editable)</label><input type="number" id="f-shares" step="1" /></div>
             <div class="field"><label>Setup Description</label><textarea id="f-notes" placeholder="Pattern, timeframe, confluence…"></textarea></div>
             ${chartPickerHTML("fc")}
             <button id="check-price" class="btn btn-secondary btn-sm">Check Live Price</button>
@@ -140,6 +141,7 @@ export async function renderNewTrade(root) {
     }
 
     function readMetrics() {
+      const sh = parseFloat($("f-shares").value);
       return tradeMetrics({
         side: $("f-side").value,
         entry: parseFloat($("f-entry").value) || 0,
@@ -147,7 +149,21 @@ export async function renderNewTrade(root) {
         target: parseFloat($("f-target").value) || 0,
         maxRisk: parseFloat($("f-risk").value) || 0,
         portfolio,
+        shares: isFinite(sh) && sh > 0 ? sh : undefined,
       });
+    }
+
+    // Recompute the auto-suggested share count into the (editable) shares field.
+    function fillSuggestedShares() {
+      const m = tradeMetrics({
+        side: $("f-side").value,
+        entry: parseFloat($("f-entry").value) || 0,
+        stop: parseFloat($("f-stop").value) || 0,
+        target: parseFloat($("f-target").value) || 0,
+        maxRisk: parseFloat($("f-risk").value) || 0,
+        portfolio,
+      });
+      $("f-shares").value = m.computedShares.toFixed(0);
     }
 
     function recompute() {
@@ -155,7 +171,6 @@ export async function renderNewTrade(root) {
       const rrColor = m.rr >= 2 ? "green" : m.rr >= 1.5 ? "yellow" : "red";
       const pctColor = m.riskPct > SETTINGS.maxRiskPctWarn ? "red" : "green";
       $("calc-row").innerHTML = `
-        <div class="calc-item"><div class="clabel">SHARES TO BUY</div><div class="cvalue">${m.shares.toFixed(0)}</div></div>
         <div class="calc-item"><div class="clabel">POSITION SIZE</div><div class="cvalue">$${m.positionSize.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div></div>
         <div class="calc-item"><div class="clabel">ACTUAL RISK</div><div class="cvalue red">-$${m.riskDollar.toFixed(2)}</div></div>
         <div class="calc-item"><div class="clabel">RISK % OF PF</div><div class="cvalue ${pctColor}">${m.riskPct.toFixed(1)}%</div></div>
@@ -309,9 +324,13 @@ export async function renderNewTrade(root) {
       });
     }
 
-    ["f-side", "f-entry", "f-stop", "f-target", "f-risk", "f-symbol"].forEach((id) =>
+    // Sizing inputs refresh the suggested share count; editing shares/target only recomputes
+    ["f-side", "f-entry", "f-stop", "f-risk"].forEach((id) =>
+      $(id).addEventListener("input", () => { fillSuggestedShares(); recompute(); }));
+    ["f-target", "f-symbol", "f-shares"].forEach((id) =>
       $(id).addEventListener("input", recompute));
 
+    fillSuggestedShares();
     renderChecklist();
   }
 
