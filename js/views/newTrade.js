@@ -300,7 +300,7 @@ export async function renderNewTrade(root) {
           grade: g.grade,
           setup_notes: $("f-notes").value,
           strategy: `${strategyId}:${checklistName}`,
-          commission: getCommission(),
+          commission: Math.round((getCommission() / 2) * 100) / 100,  // buy-side; each exit adds its sell fee
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Trade saved — grade ${g.grade}, ${m.shares.toFixed(0)} shares, risk $${m.riskDollar.toFixed(2)}`, "success");
@@ -409,7 +409,7 @@ export async function renderNewTrade(root) {
           checklist_score: null,
           setup_notes: $("tp-notes").value || `Trend-Pullback. Limit: ${entry}, Stop: ${stop}`,
           strategy: "trend-pullback",
-          commission: getCommission(),
+          commission: Math.round((getCommission() / 2) * 100) / 100,  // buy-side; each exit adds its sell fee
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Trade saved — ${shares} shares, limit $${entry.toFixed(2)}, stop $${stop.toFixed(2)}`, "success");
@@ -500,7 +500,7 @@ export async function renderNewTrade(root) {
           grade: null,
           setup_notes: $("mn-notes").value,
           strategy: "other",
-          commission: getCommission(),
+          commission: Math.round((getCommission() / 2) * 100) / 100,  // buy-side; each exit adds its sell fee
         });
         if (chartDataUrl && ref?.id) await saveChartUrl(ref.id, chartDataUrl);
         toast(`Manual trade ${$("mn-symbol").value.trim().toUpperCase()} added`, "success");

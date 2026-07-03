@@ -1,6 +1,6 @@
-import { getAllTrades, closeTrade, deleteTrade, saveChartUrl, updateTrade } from "../db.js";
-import { realizedPnl, tradeNetPnl, tradeR } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, toast, esc, chartPickerHTML, wireChartPicker } from "../ui.js";
+import { getAllTrades, recordExit, deleteTrade, saveChartUrl, updateTrade } from "../db.js";
+import { realizedPnl, tradeNetPnl, tradeR, remainingShares, exitedShares, avgExitPrice, tradeExits } from "../calc.js";
+import { fmt, colorClass, showLoader, hideLoader, toast, esc, chartPickerHTML, wireChartPicker, getCommission } from "../ui.js";
 
 export async function renderJournal(root) {
   root.innerHTML = `
@@ -32,23 +32,31 @@ export async function renderJournal(root) {
     if (!list.length) { body.innerHTML = `<div class="empty-state">No trades match the filters.</div>`; return; }
 
     const rows = list.map((t) => {
+      const exd = exitedShares(t);
+      const rem = remainingShares(t);
+      const legs = tradeExits(t).length;
+      const avg = avgExitPrice(t);
       let pnlCell = `<td class="muted">—</td>`, rCell = `<td class="muted">—</td>`;
-      if (t.status === "closed" && t.exit_price != null) {
+      if (exd > 0) {                              // closed OR partially scaled out
         const pnl = tradeNetPnl(t);
         const r = tradeR(t);
-        pnlCell = `<td class="${colorClass(pnl)} bold">${fmt.signMoney(pnl)}</td>`;
+        const partial = t.status === "open";
+        pnlCell = `<td class="${colorClass(pnl)} bold">${fmt.signMoney(pnl)}${partial ? " <span class='muted' style='font-weight:400'>so far</span>" : ""}</td>`;
         rCell = `<td class="${colorClass(r)}">${r.toFixed(2)}R</td>`;
       }
+      const sharesCell = (exd > 0 && rem > 0) ? `${t.shares} <span class="muted">(${rem.toFixed(0)} left)</span>` : `${t.shares}`;
+      const exitCell = avg != null ? `$${fmt.num(avg)}${legs > 1 ? ` <span class="muted">(${legs} legs)</span>` : ""}` : "—";
+      const exitDate = tradeExits(t).slice(-1)[0]?.date || t.exit_date;
       return `<tr>
         <td class="bold">${esc(t.symbol)}</td><td>${t.direction}</td>
-        <td>${esc(t.entry_date)}</td><td>$${fmt.num(t.entry_price)}</td><td>${t.shares}</td>
+        <td>${esc(t.entry_date)}</td><td>$${fmt.num(t.entry_price)}</td><td>${sharesCell}</td>
         <td>$${fmt.num(t.stop_loss)}</td><td>$${fmt.num(t.target)}</td><td>${t.checklist_score}</td>
         <td class="muted">${esc((t.setup_notes || "").slice(0, 40))}</td>
-        <td>${t.exit_date ? esc(t.exit_date) : "—"}</td>
-        <td>${t.exit_price != null ? "$" + fmt.num(t.exit_price) : "—"}</td>
+        <td>${exitDate ? esc(exitDate) : "—"}</td>
+        <td>${exitCell}</td>
         ${pnlCell}${rCell}
         <td>${t.chart_url ? `<span class="chart-view" data-id="${t.id}" title="View chart">📎</span>` : ""}</td>
-        <td>${t.status === "open" ? "🟢 Open" : "⚫ Closed"}</td>
+        <td>${t.status === "open" ? (exd > 0 ? "🟡 Partial" : "🟢 Open") : "⚫ Closed"}</td>
       </tr>`;
     }).join("");
 
@@ -171,55 +179,70 @@ export async function renderJournal(root) {
     renderForm();
   }
 
-  // ── Close a position ──────────────────────────────────────────────────────
+  // ── Scale out / close a position ──────────────────────────────────────────
   function renderCloseSection(openTrades) {
     const el = document.getElementById("close-section");
     if (!openTrades.length) { el.innerHTML = ""; return; }
-    const opts = openTrades.map((t) => `<option value="${t.id}">#${t.id.slice(0,5)} ${esc(t.symbol)} ${t.direction} @ $${fmt.num(t.entry_price)}</option>`).join("");
+    const sellFee = Math.round((getCommission() / 2) * 100) / 100;
+    const opts = openTrades.map((t) => `<option value="${t.id}">#${t.id.slice(0,5)} ${esc(t.symbol)} ${t.direction} @ $${fmt.num(t.entry_price)} (${remainingShares(t).toFixed(0)} sh)</option>`).join("");
     el.innerHTML = `
       <div class="card">
-        <div class="section-title">Close a Position</div>
+        <div class="section-title">Sell / Scale Out of a Position</div>
         <div class="field"><label>Select open trade</label><select id="close-sel">${opts}</select></div>
         <div class="field-row">
+          <div class="field"><label>Shares to sell</label><input type="number" id="close-shares" step="1" min="1" /></div>
           <div class="field"><label>Exit Price $</label><input type="number" id="close-price" step="0.01" /></div>
           <div class="field"><label>Exit Date</label><input type="date" id="close-date" /></div>
         </div>
-        <div class="field"><label>Exit Notes</label><textarea id="close-notes" placeholder="Why exit? What's the lesson?"></textarea></div>
+        <div class="field"><label>Notes</label><textarea id="close-notes" placeholder="Why exit? What's the lesson?"></textarea></div>
         <div id="close-preview" style="font-size:18px;font-weight:700;margin-bottom:12px"></div>
-        <button id="close-btn" class="btn btn-primary">Close Position</button>
+        <button id="close-btn" class="btn btn-primary">Confirm Sell</button>
       </div>`;
 
     document.getElementById("close-date").value = new Date().toISOString().slice(0, 10);
     const sel = document.getElementById("close-sel");
     const priceEl = document.getElementById("close-price");
+    const sharesEl = document.getElementById("close-shares");
 
     function preview() {
       const t = openTrades.find((x) => x.id === sel.value);
       const exit = parseFloat(priceEl.value);
-      if (!t || !isFinite(exit)) { document.getElementById("close-preview").textContent = ""; return; }
-      const pnl = realizedPnl(t.direction, t.entry_price, exit, t.shares) - (t.commission || 0);
-      const risk = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
-      const r = risk ? pnl / risk : 0;
+      let qty = parseFloat(sharesEl.value);
+      if (!t || !isFinite(exit) || !isFinite(qty) || qty <= 0) { document.getElementById("close-preview").textContent = ""; return; }
+      const rem = remainingShares(t);
+      qty = Math.min(qty, rem);
+      const full = qty >= rem;
+      const pnl = realizedPnl(t.direction, t.entry_price, exit, qty) - sellFee;
+      const rps = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) : 0;
+      const r = rps ? realizedPnl(t.direction, t.entry_price, exit, qty) / (rps * qty) : 0;
       document.getElementById("close-preview").innerHTML =
-        `<span class="${colorClass(pnl)}">Preview: ${fmt.signMoney(pnl)} (net of $${(t.commission || 0).toFixed(2)} comm) | ${r >= 0 ? "+" : ""}${r.toFixed(2)}R</span>`;
+        `<span class="${colorClass(pnl)}">${full ? "Close all" : "Sell " + qty.toFixed(0) + " of " + rem.toFixed(0)}: `
+        + `${fmt.signMoney(pnl)} (net of $${sellFee.toFixed(2)} sell fee)${rps ? " | " + (r >= 0 ? "+" : "") + r.toFixed(2) + "R" : ""}`
+        + `${full ? "" : ` · ${(rem - qty).toFixed(0)} left running`}</span>`;
     }
-    sel.addEventListener("change", () => {
+    function loadDefaults() {
       const t = openTrades.find((x) => x.id === sel.value);
-      if (t) priceEl.value = t.entry_price;
+      if (t) { priceEl.value = t.entry_price; sharesEl.value = remainingShares(t).toFixed(0); }
       preview();
-    });
+    }
+    sel.addEventListener("change", loadDefaults);
     priceEl.addEventListener("input", preview);
-    const first = openTrades.find((x) => x.id === sel.value);
-    if (first) priceEl.value = first.entry_price;
-    preview();
+    sharesEl.addEventListener("input", preview);
+    loadDefaults();
 
     document.getElementById("close-btn").addEventListener("click", async () => {
+      const t = openTrades.find((x) => x.id === sel.value);
       const exit = parseFloat(priceEl.value);
-      if (!isFinite(exit)) { toast("Enter exit price", "error"); return; }
+      let qty = parseFloat(sharesEl.value);
+      const rem = remainingShares(t);
+      if (!isFinite(exit) || exit <= 0) { toast("Enter exit price", "error"); return; }
+      if (!isFinite(qty) || qty <= 0) { toast("Enter shares to sell", "error"); return; }
+      if (qty > rem) { toast(`Only ${rem.toFixed(0)} shares left`, "error"); return; }
+      const leg = { shares: qty, price: exit, date: document.getElementById("close-date").value || new Date().toISOString().slice(0, 10), notes: document.getElementById("close-notes").value, commission: sellFee };
       showLoader();
       try {
-        await closeTrade(sel.value, exit, document.getElementById("close-date").value, document.getElementById("close-notes").value);
-        toast("Position closed", "success");
+        const left = await recordExit(sel.value, t, leg);
+        toast(left > 0 ? `Sold ${qty.toFixed(0)} — ${left.toFixed(0)} left running` : "Position closed", "success");
         renderJournal(root);
       } catch (e) { toast("Failed: " + e.message, "error"); }
       finally { hideLoader(); }

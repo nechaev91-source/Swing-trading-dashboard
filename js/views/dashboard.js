@@ -1,6 +1,6 @@
 import { getOpenTrades, getClosedTrades } from "../db.js";
 import { getPricesBatch } from "../data.js";
-import { openPositionStats, tradeNetPnl, tradeR } from "../calc.js";
+import { openPositionStats, tradeNetPnl, tradeR, remainingShares, exitedShares } from "../calc.js";
 import { fmt, showLoader, hideLoader, getPortfolio, setPortfolio, esc, normDate } from "../ui.js";
 import { currentUser } from "../auth.js";
 
@@ -77,21 +77,23 @@ export async function renderDashboard(root) {
   const realizedAll = cum - portfolioBase;
 
   // ── Open positions / exposure (range-independent "now" snapshot) ────────────
-  let unrealized = 0, deployed = 0, costBasis = 0;
+  let unrealized = 0, deployed = 0, costBasis = 0, realizedOpen = 0;
   const positions = [];
   for (const t of open) {
+    const rem = remainingShares(t);                 // shares still held after any partial exits
+    if (exitedShares(t) > 0) realizedOpen += tradeNetPnl(t);   // cash already banked from scale-outs
     const cur = prices[t.symbol];
-    deployed += (cur || t.entry_price) * t.shares;
-    costBasis += t.entry_price * t.shares;
+    deployed += (cur || t.entry_price) * rem;
+    costBasis += t.entry_price * rem;
     let chg = null, pnl = null;
     if (cur) {
-      pnl = openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, t.shares).pnl;
+      pnl = openPositionStats(t.direction, t.entry_price, cur, t.stop_loss, t.target, rem).pnl;
       unrealized += pnl;
       chg = ((cur - t.entry_price) / t.entry_price) * 100 * (t.direction === "Short" ? -1 : 1);
     }
-    positions.push({ sym: t.symbol, shares: t.shares, entry: t.entry_price, chg, pnl });
+    positions.push({ sym: t.symbol, shares: rem, entry: t.entry_price, chg, pnl });
   }
-  const portfolioValue = portfolioBase + realizedAll + unrealized;
+  const portfolioValue = portfolioBase + realizedAll + realizedOpen + unrealized;
   const cashDollar = Math.max(0, portfolioValue - deployed);
   const exposurePct = portfolioValue > 0 ? Math.min(100, (deployed / portfolioValue) * 100) : 0;
   const segColors = [COL.accent, COL.blue, COL.lime, "#b07cff", "#e3a93f"];

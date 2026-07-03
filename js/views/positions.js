@@ -1,6 +1,6 @@
-import { getOpenTrades, updateTradeStop, updateTrade, closeTrade } from "../db.js";
-import { realizedPnl } from "../calc.js";
-import { fmt, colorClass, showLoader, hideLoader, toast, esc } from "../ui.js";
+import { getOpenTrades, updateTradeStop, updateTrade, recordExit } from "../db.js";
+import { realizedPnl, remainingShares, exitedShares, tradeNetPnl } from "../calc.js";
+import { fmt, colorClass, showLoader, hideLoader, toast, esc, getCommission } from "../ui.js";
 
 function stratLabel(strategy) {
   if (!strategy) return ["Other", "#8b949e"];
@@ -38,6 +38,9 @@ export async function renderPositions(root) {
       const isTrend = t.strategy === "trend-pullback";
       const curStop = t.current_stop ?? t.stop_loss;
       const [label, col] = stratLabel(t.strategy);
+      const rem = remainingShares(t);
+      const exd = exitedShares(t);
+      const banked = exd > 0 ? tradeNetPnl(t) : null;   // realized so far from partial exits
       return `
         <div class="card pos-card" data-id="${t.id}">
           <div class="pos-header">
@@ -49,9 +52,12 @@ export async function renderPositions(root) {
           </div>
           <div class="pos-details">
             <div class="pos-stat"><div class="clabel">ENTRY</div><div class="cvalue">${money(t.entry_price)}</div></div>
-            <div class="pos-stat"><div class="clabel">SHARES</div><div class="cvalue">${(+t.shares).toFixed(0)}</div></div>
+            <div class="pos-stat"><div class="clabel">SHARES</div><div class="cvalue">${exd > 0
+              ? `${rem.toFixed(0)} <span class="muted" style="font-weight:400">/ ${(+t.shares).toFixed(0)}</span>`
+              : (+t.shares).toFixed(0)}</div></div>
             <div class="pos-stat"><div class="clabel">CURRENT STOP</div><div class="cvalue ${curStop != null ? "red" : "muted"}">${money(curStop)}</div></div>
             ${t.target != null ? `<div class="pos-stat"><div class="clabel">TARGET</div><div class="cvalue green">${money(t.target)}</div></div>` : ""}
+            ${exd > 0 ? `<div class="pos-stat"><div class="clabel">REALIZED (${exd.toFixed(0)} sold)</div><div class="cvalue ${colorClass(banked)}">${fmt.signMoney(banked)}</div></div>` : ""}
             ${isTrend ? `<div class="pos-stat"><div class="clabel">INITIAL STOP</div><div class="cvalue muted">${money(t.stop_loss)}</div></div>` : ""}
           </div>
 
@@ -79,19 +85,27 @@ export async function renderPositions(root) {
           <div class="pos-actions" id="act-${t.id}">
             <button class="btn btn-secondary btn-sm edit-pos" data-id="${t.id}">✏️ Edit</button>
             ${isTrend ? `<button class="btn btn-secondary btn-sm raise-stop" data-id="${t.id}">⬆ Raise Stop</button>` : ""}
-            <button class="btn btn-danger btn-sm close-toggle" data-id="${t.id}">✕ Close</button>
+            <button class="btn btn-danger btn-sm close-toggle" data-id="${t.id}">✕ Sell / Close</button>
           </div>
 
-          <!-- Close form -->
+          <!-- Scale-out / close form -->
           <div class="pos-edit hidden" id="cl-${t.id}">
             <div class="field-row">
+              <div class="field"><label>Shares to sell (max ${rem.toFixed(0)})</label><input type="number" step="1" min="1" max="${rem}" id="cl-shares-${t.id}" value="${rem}"></div>
               <div class="field"><label>Exit (sell) Price $</label><input type="number" step="0.01" id="cl-price-${t.id}" value="${curStop != null ? (+curStop).toFixed(2) : t.entry_price}"></div>
-              <div class="field"><label>Exit Date</label><input type="date" id="cl-date-${t.id}"></div>
             </div>
-            <div class="field"><label>Exit Notes (optional)</label><input id="cl-notes-${t.id}" placeholder="reason / lesson"></div>
+            <div class="field-row">
+              <div class="field"><label>Exit Date</label><input type="date" id="cl-date-${t.id}"></div>
+              <div class="field"><label>Notes (optional)</label><input id="cl-notes-${t.id}" placeholder="reason / lesson"></div>
+            </div>
+            <div class="pos-actions" style="gap:6px;margin-bottom:8px">
+              <button class="btn btn-ghost btn-sm quick-frac" data-id="${t.id}" data-frac="0.5">½</button>
+              <button class="btn btn-ghost btn-sm quick-frac" data-id="${t.id}" data-frac="0.333">⅓</button>
+              <button class="btn btn-ghost btn-sm quick-frac" data-id="${t.id}" data-frac="1">All</button>
+            </div>
             <div id="cl-prev-${t.id}" style="font-weight:600;margin-bottom:10px"></div>
             <div class="pos-actions">
-              <button class="btn btn-primary btn-sm do-close" data-id="${t.id}">Confirm Close</button>
+              <button class="btn btn-primary btn-sm do-close" data-id="${t.id}">Confirm Sell</button>
               <button class="btn btn-ghost btn-sm cancel-close" data-id="${t.id}">Cancel</button>
             </div>
           </div>
@@ -161,17 +175,26 @@ export async function renderPositions(root) {
       finally { hideLoader(); }
     }));
 
-    // ── Close (with custom sell price) ────────────────────────
+    // ── Scale out / close (partial or full sell) ──────────────
+    const sellFee = Math.round((getCommission() / 2) * 100) / 100;   // per-exit sell commission
+
     function closePreview(id) {
       const t = trades.find((x) => x.id === id);
+      const rem = remainingShares(t);
       const exit = parseFloat(document.getElementById(`cl-price-${id}`).value);
+      let qty = parseFloat(document.getElementById(`cl-shares-${id}`).value);
       const el = document.getElementById(`cl-prev-${id}`);
-      if (!isFinite(exit)) { el.textContent = ""; return; }
-      const pnl = realizedPnl(t.direction, t.entry_price, exit, t.shares) - (t.commission || 0);
-      const risk = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
-      const r = risk ? pnl / risk : 0;
+      if (!isFinite(exit) || !isFinite(qty) || qty <= 0) { el.textContent = ""; return; }
+      qty = Math.min(qty, rem);
+      const full = qty >= rem;
+      const pnl = realizedPnl(t.direction, t.entry_price, exit, qty) - sellFee;   // this leg, net of its sell fee
+      const rps = (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) : 0;
+      const r = rps ? (realizedPnl(t.direction, t.entry_price, exit, qty)) / (rps * qty) : 0;
       el.className = colorClass(pnl);
-      el.innerHTML = `Preview: ${fmt.signMoney(pnl)} (net of $${(t.commission || 0).toFixed(2)} comm)${risk ? " | " + (r >= 0 ? "+" : "") + r.toFixed(2) + "R" : ""}`;
+      el.innerHTML = `${full ? "Close all" : "Sell " + qty.toFixed(0) + " of " + rem.toFixed(0)}: `
+        + `${fmt.signMoney(pnl)} <span class="muted" style="font-weight:400">(net of $${sellFee.toFixed(2)} sell fee)</span>`
+        + `${rps ? " · " + (r >= 0 ? "+" : "") + r.toFixed(2) + "R" : ""}`
+        + `${full ? "" : ` · ${(rem - qty).toFixed(0)} left running`}`;
     }
 
     body.querySelectorAll(".close-toggle").forEach((b) => b.addEventListener("click", () => {
@@ -179,6 +202,16 @@ export async function renderPositions(root) {
       show(`cl-${id}`); hide(`act-${id}`);
       document.getElementById(`cl-date-${id}`).value = new Date().toISOString().slice(0, 10);
       document.getElementById(`cl-price-${id}`).addEventListener("input", () => closePreview(id));
+      document.getElementById(`cl-shares-${id}`).addEventListener("input", () => closePreview(id));
+      closePreview(id);
+    }));
+    body.querySelectorAll(".quick-frac").forEach((b) => b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      const t = trades.find((x) => x.id === id);
+      const rem = remainingShares(t);
+      const frac = parseFloat(b.dataset.frac);
+      const qty = frac >= 1 ? rem : Math.max(1, Math.round(rem * frac));
+      document.getElementById(`cl-shares-${id}`).value = qty;
       closePreview(id);
     }));
     body.querySelectorAll(".cancel-close").forEach((b) => b.addEventListener("click", () => {
@@ -187,16 +220,23 @@ export async function renderPositions(root) {
     body.querySelectorAll(".do-close").forEach((b) => b.addEventListener("click", async () => {
       const id = b.dataset.id;
       const t = trades.find((x) => x.id === id);
+      const rem = remainingShares(t);
       const exit = parseFloat(document.getElementById(`cl-price-${id}`).value);
+      let qty = parseFloat(document.getElementById(`cl-shares-${id}`).value);
       if (!isFinite(exit) || exit <= 0) { toast("Enter a valid exit price", "error"); return; }
+      if (!isFinite(qty) || qty <= 0) { toast("Enter shares to sell", "error"); return; }
+      if (qty > rem) { toast(`Only ${rem.toFixed(0)} shares left`, "error"); return; }
       const date = document.getElementById(`cl-date-${id}`).value || new Date().toISOString().slice(0, 10);
       const notes = document.getElementById(`cl-notes-${id}`).value;
+      const leg = { shares: qty, price: exit, date, notes, commission: sellFee };
       showLoader();
       try {
-        await closeTrade(id, exit, date, notes);
-        toast(`${t.symbol} closed at $${exit.toFixed(2)}`, "success");
+        const left = await recordExit(id, t, leg);
+        toast(left > 0
+          ? `Sold ${qty.toFixed(0)} ${t.symbol} @ $${exit.toFixed(2)} — ${left.toFixed(0)} left running`
+          : `${t.symbol} fully closed`, "success");
         await refresh();
-      } catch (e) { toast("Close failed: " + e.message, "error"); }
+      } catch (e) { toast("Sell failed: " + e.message, "error"); }
       finally { hideLoader(); }
     }));
   }

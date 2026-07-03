@@ -43,16 +43,42 @@ export function rMultiple(side, entry, exit, stop, shares) {
   return risk !== 0 ? pnl / risk : 0;
 }
 
+// ── Partial-exit helpers ─────────────────────────────────────────────────────
+// A trade can be scaled out in several legs. `t.exits` is an array of
+// { shares, price, date, notes, commission }. For backward compatibility, a
+// legacy closed trade that only has a single `exit_price` is treated as one leg
+// covering all shares.
+export function tradeExits(t) {
+  if (Array.isArray(t.exits) && t.exits.length) return t.exits;
+  if (t.exit_price != null) return [{ shares: t.shares, price: t.exit_price, date: t.exit_date || "", notes: t.exit_notes || "" }];
+  return [];
+}
+// Shares already sold across all exit legs.
+export function exitedShares(t) {
+  return tradeExits(t).reduce((s, e) => s + (+e.shares || 0), 0);
+}
+// Shares still held (never below 0).
+export function remainingShares(t) {
+  return Math.max(0, (+t.shares || 0) - exitedShares(t));
+}
+// Share-weighted average exit price across the legs (null if nothing sold yet).
+export function avgExitPrice(t) {
+  const legs = tradeExits(t), sh = exitedShares(t);
+  return sh ? legs.reduce((s, e) => s + e.price * e.shares, 0) / sh : null;
+}
+
 // ── Trade-level helpers that include commission ──────────────────────────────
-// A closed trade's initial dollar risk (0 if no stop).
+// Initial dollar risk, always on the ORIGINAL position size (the R denominator).
 export function tradeRisk(t) {
   return (t.stop_loss != null && isFinite(t.stop_loss)) ? Math.abs(t.entry_price - t.stop_loss) * t.shares : 0;
 }
-// Net realized P&L = gross − round-trip commission.
+// Net realized P&L = gross across all exit legs − total commission booked so far.
+// For a partially-exited open trade this is the amount already banked.
 export function tradeNetPnl(t) {
-  return realizedPnl(t.direction, t.entry_price, t.exit_price, t.shares) - (t.commission || 0);
+  const gross = tradeExits(t).reduce((s, e) => s + realizedPnl(t.direction, t.entry_price, e.price, e.shares), 0);
+  return gross - (t.commission || 0);
 }
-// R-multiple on net P&L (0 if no stop).
+// R-multiple on net P&L (0 if no stop). Blended across legs.
 export function tradeR(t) {
   const risk = tradeRisk(t);
   return risk ? tradeNetPnl(t) / risk : 0;

@@ -48,6 +48,7 @@ export async function addTrade(t) {
     imported: t.imported ?? false,
     setup_notes: t.setup_notes || "",
     strategy: t.strategy || "breakout",
+    exits: t.exits ?? [],          // partial-exit legs
     exit_price: null,
     exit_date: null,
     exit_notes: null,
@@ -78,6 +79,31 @@ export async function closeTrade(id, exitPrice, exitDate, exitNotes) {
     exit_notes: exitNotes || "",
     status: "closed",
   });
+}
+
+// ── Record a (partial or full) exit leg ──────────────────────────────────────
+// `trade` is the current in-memory trade; `leg` = { shares, price, date, notes, commission }.
+// Appends the leg, adds its sell commission, and auto-closes the trade when no
+// shares remain (writing summary exit_price/exit_date for closed-trade code paths).
+// Returns the number of shares still open after this exit.
+export async function recordExit(id, trade, leg) {
+  const ref = doc(db, "users", currentUser().uid, "trades", id);
+  const exits = [...(trade.exits || []), leg];
+  const exited = exits.reduce((s, e) => s + (+e.shares || 0), 0);
+  const remaining = (+trade.shares || 0) - exited;
+  const fields = {
+    exits,
+    commission: (trade.commission || 0) + (leg.commission || 0),
+  };
+  if (remaining <= 0) {
+    const avg = exits.reduce((s, e) => s + e.price * e.shares, 0) / exited;
+    fields.status = "closed";
+    fields.exit_price = avg;                 // share-weighted avg exit
+    fields.exit_date = leg.date;
+    fields.exit_notes = leg.notes || trade.exit_notes || "";
+  }
+  await updateDoc(ref, fields);
+  return remaining;
 }
 
 // ── Chart URL ────────────────────────────────────────────────────────────────
