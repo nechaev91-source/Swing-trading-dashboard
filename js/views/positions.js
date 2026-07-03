@@ -58,7 +58,7 @@ export async function renderPositions(root) {
             <div class="pos-stat"><div class="clabel">CURRENT STOP</div><div class="cvalue ${curStop != null ? "red" : "muted"}">${money(curStop)}</div></div>
             ${t.target != null ? `<div class="pos-stat"><div class="clabel">TARGET</div><div class="cvalue green">${money(t.target)}</div></div>` : ""}
             ${exd > 0 ? `<div class="pos-stat"><div class="clabel">REALIZED (${exd.toFixed(0)} sold)</div><div class="cvalue ${colorClass(banked)}">${fmt.signMoney(banked)}</div></div>` : ""}
-            ${isTrend ? `<div class="pos-stat"><div class="clabel">INITIAL STOP</div><div class="cvalue muted">${money(t.stop_loss)}</div></div>` : ""}
+            ${(t.stop_loss != null && curStop !== t.stop_loss) ? `<div class="pos-stat"><div class="clabel">INITIAL STOP</div><div class="cvalue muted">${money(t.stop_loss)}</div></div>` : ""}
           </div>
 
           <!-- Full edit form (hidden) -->
@@ -84,7 +84,7 @@ export async function renderPositions(root) {
           <!-- Default actions -->
           <div class="pos-actions" id="act-${t.id}">
             <button class="btn btn-secondary btn-sm edit-pos" data-id="${t.id}">✏️ Edit</button>
-            ${isTrend ? `<button class="btn btn-secondary btn-sm raise-stop" data-id="${t.id}">⬆ Raise Stop</button>` : ""}
+            <button class="btn btn-secondary btn-sm raise-stop" data-id="${t.id}">🎯 Move Stop</button>
             <button class="btn btn-danger btn-sm close-toggle" data-id="${t.id}">✕ Sell / Close</button>
           </div>
 
@@ -110,12 +110,13 @@ export async function renderPositions(root) {
             </div>
           </div>
 
-          <!-- Inline stop raise (trend-pullback) -->
-          ${isTrend ? `<div class="pos-actions stop-edit hidden" id="raise-${t.id}">
-            <input type="number" class="stop-input" id="stop-val-${t.id}" value="${(+curStop).toFixed(2)}" step="0.01" style="width:110px" />
+          <!-- Inline move stop (all positions) -->
+          <div class="pos-actions stop-edit hidden" id="raise-${t.id}">
+            <input type="number" class="stop-input" id="stop-val-${t.id}" value="${curStop != null ? (+curStop).toFixed(2) : (+t.entry_price).toFixed(2)}" step="0.01" style="width:110px" />
+            <button class="btn btn-ghost btn-sm be-stop" data-id="${t.id}" data-be="${t.entry_price}">→ Breakeven</button>
             <button class="btn btn-secondary btn-sm save-stop" data-id="${t.id}">Save Stop</button>
             <button class="btn btn-ghost btn-sm cancel-raise" data-id="${t.id}">Cancel</button>
-          </div>` : ""}
+          </div>
         </div>`;
     }).join("");
 
@@ -164,6 +165,9 @@ export async function renderPositions(root) {
     }));
     body.querySelectorAll(".cancel-raise").forEach((b) => b.addEventListener("click", () => {
       hide(`raise-${b.dataset.id}`); show(`act-${b.dataset.id}`);
+    }));
+    body.querySelectorAll(".be-stop").forEach((b) => b.addEventListener("click", () => {
+      document.getElementById(`stop-val-${b.dataset.id}`).value = parseFloat(b.dataset.be).toFixed(2);
     }));
     body.querySelectorAll(".save-stop").forEach((b) => b.addEventListener("click", async () => {
       const id = b.dataset.id;
