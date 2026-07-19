@@ -65,11 +65,15 @@ export async function getCurrentPrice(symbol) {
 }
 
 // ── Batch prices (dashboard) ──────────────────────────────────────────────────
+// Last successful quote per symbol, kept for this page session. The free Twelve
+// Data tier rejects bursty/concurrent calls (returns nulls); when that happens we
+// fall back to the last known price instead of blanking the dashboard.
+const _lastPrices = {};
 export async function getPricesBatch(symbols) {
   if (!symbols.length) return {};
+  let out = {};
   try {
     const j = await apiGet("/price", { symbol: symbols.join(",") });
-    const out = {};
     if (symbols.length === 1) {
       const p = parseFloat(j.price);
       out[symbols[0]] = isFinite(p) ? p : null;
@@ -79,13 +83,16 @@ export async function getPricesBatch(symbols) {
         out[s] = isFinite(p) ? p : null;
       }
     }
-    return out;
   } catch {
     // fallback: one by one
-    const out = {};
     for (const s of symbols) out[s] = await getCurrentPrice(s);
-    return out;
   }
+  // Merge: keep a fresh price, else reuse the last good one we saw this session.
+  for (const s of symbols) {
+    if (out[s] != null) _lastPrices[s] = out[s];
+    else if (_lastPrices[s] != null) out[s] = _lastPrices[s];
+  }
+  return out;
 }
 
 // Helper: average close / volume over the last N daily candles

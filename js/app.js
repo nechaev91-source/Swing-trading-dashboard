@@ -69,14 +69,24 @@ async function route() {
 window.addEventListener("hashchange", route);
 
 // ── Auth gate ─────────────────────────────────────────────────────────────────
+// onAuthStateChanged can fire more than once for the SAME user (initial restore,
+// token refresh, tab regaining focus on mobile). Only bootstrap the app the first
+// time we see a given uid — re-firing it would re-render the view and race a second
+// live-price fetch against the first (Twelve Data's free tier rejects the concurrent
+// call → nulls), which on mobile blanked the prices right after they appeared.
+let bootedUid = null;
 onAuth(async (user) => {
   if (user) {
     authScreen.classList.add("hidden");
     appShell.classList.remove("hidden");
+    if (user.uid === bootedUid) return;   // already initialized for this user
+    bootedUid = user.uid;
     await syncSettingsFromRemote();   // pull starting capital + commission from other devices
+    // Route exactly once: setting the hash fires hashchange→route; otherwise call it.
     if (!location.hash) location.hash = "#dashboard";
-    route();
+    else route();
   } else {
+    bootedUid = null;
     appShell.classList.add("hidden");
     authScreen.classList.remove("hidden");
   }
