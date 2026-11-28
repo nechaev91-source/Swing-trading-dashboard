@@ -1,33 +1,16 @@
 {
-  "generated_at": "2026-11-27T05:13:19+00:00",
+  "generated_at": "2026-11-28T04:49:48+00:00",
   "source": "TradingView Ideas \u2014 Trend Lines tag (US stocks)",
-  "count": 13,
+  "count": 15,
   "ideas": [
-    {
-      "ticker": "AMZN",
-      "exchange": "NASDAQ",
-      "title": "AMZN: Bearish Breakdown \u2013 $230 Liquidity Zone in Focus",
-      "author": "XAUApex",
-      "premium": true,
-      "likes": 46,
-      "comments": 20,
-      "is_sp500": false,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "\ud83d\udd39 AMZN is showing a developing bearish market structure after price failed to sustain momentum near the $265\u2013$270 resistance zone. The chart previously formed a",
-      "chart_url": "https://www.tradingview.com/chart/AMZN/GSO5jYIz-AMZN-Bearish-Breakdown-230-Liquidity-Zone-in-Focus/",
-      "image": "https://s3.tradingview.com/g/GSO5jYIz_mid.webp",
-      "created_at": "2026-11-24T06:49:03+00:00",
-      "score": 91
-    },
     {
       "ticker": "SPCX",
       "exchange": "NASDAQ",
       "title": "SPCX: Major Descending-Wedge Above 115, +60% Upside-Potential!",
       "author": "VincePrince",
       "premium": true,
-      "likes": 38,
-      "comments": 12,
+      "likes": 61,
+      "comments": 17,
       "is_sp500": false,
       "is_hot": true,
       "editors_pick": false,
@@ -35,24 +18,7 @@
       "chart_url": "https://www.tradingview.com/chart/SPCX/RVQZgwrJ-SPCX-Major-Descending-Wedge-Above-115-60-Upside-Potential/",
       "image": "https://s3.tradingview.com/r/RVQZgwrJ_mid.webp",
       "created_at": "2026-11-26T10:33:24+00:00",
-      "score": 67
-    },
-    {
-      "ticker": "TREO",
-      "exchange": "NASDAQ",
-      "title": "TREO - Bullish Structure Faces Its Next Test!",
-      "author": "TheSignalyst",
-      "premium": true,
-      "likes": 11,
-      "comments": 5,
-      "is_sp500": false,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "TREO experienced an important  shift in market structure  around two weeks ago after breaking above the  $2.27 major high.   That breakout shifted momentum from",
-      "chart_url": "https://www.tradingview.com/chart/TREO/EVfWlc5m-TREO-Bullish-Structure-Faces-Its-Next-Test/",
-      "image": "https://s3.tradingview.com/e/EVfWlc5m_mid.webp",
-      "created_at": "2026-11-25T12:06:49+00:00",
-      "score": 26
+      "score": 100
     },
     {
       "ticker": "TSLA",
@@ -60,8 +26,8 @@
       "title": "TESLA Eyes $2000 once this level breaks.",
       "author": "TradingShot",
       "premium": true,
-      "likes": 13,
-      "comments": 0,
+      "likes": 28,
+      "comments": 5,
       "is_sp500": false,
       "is_hot": true,
       "editors_pick": false,
@@ -69,7 +35,24 @@
       "chart_url": "https://www.tradingview.com/chart/TSLA/eVqLIIzA-TESLA-Eyes-2000-once-this-level-breaks/",
       "image": "https://s3.tradingview.com/e/eVqLIIzA_mid.webp",
       "created_at": "2026-11-26T19:30:42+00:00",
-      "score": 18
+      "score": 43
+    },
+    {
+      "ticker": "SPCX",
+      "exchange": "NASDAQ",
+      "title": "SPCX \u2013 Bearish Trendline Rejection: Is $100 Liquidity Next?",
+      "author": "XAUApex",
+      "premium": true,
+      "likes": 16,
+      "comments": 5,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "\ud83d\udd39 SPCX price action continues to reflect a bearish market structure, with lower highs and sustained selling pressure following the rejection from the descending",
+      "chart_url": "https://www.tradingview.com/chart/SPCX/cO7ko7PT-SPCX-Bearish-Trendline-Rejection-Is-100-Liquidity-Next/",
+      "image": "https://s3.tradingview.com/c/cO7ko7PT_mid.webp",
+      "created_at": "2026-11-25T06:14:50+00:00",
+      "score": 31
     },
     {
       "ticker": "NKE",
@@ -77,8 +60,8 @@
       "title": "NKE | Downtrend Broken, Three Pools Above",
       "author": "BigBeluga",
       "premium": true,
-      "likes": 6,
-      "comments": 2,
+      "likes": 16,
+      "comments": 4,
       "is_sp500": false,
       "is_hot": true,
       "editors_pick": false,
@@ -86,7 +69,24 @@
       "chart_url": "https://www.tradingview.com/chart/NKE/3CeXEoRI-NKE-Downtrend-Broken-Three-Pools-Above/",
       "image": "https://s3.tradingview.com/3/3CeXEoRI_mid.webp",
       "created_at": "2026-11-26T20:45:37+00:00",
-      "score": 15
+      "score": 29
+    },
+    {
+      "ticker": "SNDK",
+      "exchange": "NASDAQ",
+      "title": "SNDK | 70% Crash Into the April Breakout Zone",
+      "author": "I_M_Shoaib",
+      "premium": true,
+      "likes": 0,
+      "comments": 2,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "Sandisk's parabolic run, which started in August 2025, took the stock to almost 300 before a 70% collapse brought it back to 85.36. That decline has now landed ",
+      "chart_url": "https://www.tradingview.com/chart/SNDK/3jClGQMP-SNDK-70-Crash-Into-the-April-Breakout-Zone/",
+      "image": "https://s3.tradingview.com/3/3jClGQMP_mid.webp",
+      "created_at": "2026-11-28T00:09:31+00:00",
+      "score": 9
     },
     {
       "ticker": "AAPL",
@@ -111,7 +111,7 @@
       "title": "CEG - HTF Trade Entry Approaching",
       "author": "BtheTrade",
       "premium": true,
-      "likes": 2,
+      "likes": 3,
       "comments": 0,
       "is_sp500": false,
       "is_hot": true,
@@ -120,7 +120,7 @@
       "chart_url": "https://www.tradingview.com/chart/CEG/VRYyT4Ik-CEG-HTF-Trade-Entry-Approaching/",
       "image": "https://s3.tradingview.com/v/VRYyT4Ik_mid.webp",
       "created_at": "2026-11-25T16:00:39+00:00",
-      "score": 7
+      "score": 8
     },
     {
       "ticker": "BE",
@@ -140,21 +140,55 @@
       "score": 7
     },
     {
-      "ticker": "ORCL",
+      "ticker": "DIS",
       "exchange": "NYSE",
-      "title": "ORACLE Channel pattern at Support",
-      "author": "SILICIDE",
+      "title": "Disney breaks $122.00 \u2013 eyes $130.00",
+      "author": "FxPro",
       "premium": true,
-      "likes": 2,
+      "likes": 1,
       "comments": 0,
       "is_sp500": false,
       "is_hot": true,
       "editors_pick": false,
-      "summary": "Oracle  has reached the channel pattern support from here the price may go up and is good point to enter the trade. Let us see how it playsout .",
-      "chart_url": "https://www.tradingview.com/chart/ORCL/XGNZLzJ2-ORACLE-Channel-pattern-at-Support/",
-      "image": "https://s3.tradingview.com/x/XGNZLzJ2_mid.webp",
-      "created_at": "2026-11-25T16:56:18+00:00",
-      "score": 7
+      "summary": "\u2013 Disney broke resistance zone \u2013 Likely to rise to resistance level 130.00  Disney recently broke the resistance zone between the resistance level 122.00, which",
+      "chart_url": "https://www.tradingview.com/chart/DIS/Tx9nvp2d-Disney-breaks-122-00-eyes-130-00/",
+      "image": "https://s3.tradingview.com/t/Tx9nvp2d_mid.webp",
+      "created_at": "2026-11-27T20:41:11+00:00",
+      "score": 6
+    },
+    {
+      "ticker": "MU",
+      "exchange": "NASDAQ",
+      "title": "MU: Can Buyers Break the Descending Channel?",
+      "author": "khadymamaa",
+      "premium": true,
+      "likes": 1,
+      "comments": 0,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "Micron is attempting a recovery after a difficult period for semiconductor stocks. But one question matters more to me right now: is this the beginning of a rev",
+      "chart_url": "https://www.tradingview.com/chart/MU/85lNanu3-MU-Can-Buyers-Break-the-Descending-Channel/",
+      "image": "https://s3.tradingview.com/8/85lNanu3_mid.webp",
+      "created_at": "2026-11-27T19:32:52+00:00",
+      "score": 6
+    },
+    {
+      "ticker": "TSLA",
+      "exchange": "NASDAQ",
+      "title": "TSLA: showing strength",
+      "author": "HeadsUp2021",
+      "premium": true,
+      "likes": 0,
+      "comments": 0,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "TSLA has been trading just below the resistance line from the downsloping channel for a while. It's way above July 29 low whereas the broader stock market is wa",
+      "chart_url": "https://www.tradingview.com/chart/TSLA/SNCVovYf-TSLA-showing-strength/",
+      "image": "https://s3.tradingview.com/s/SNCVovYf_mid.webp",
+      "created_at": "2026-11-27T15:04:37+00:00",
+      "score": 5
     },
     {
       "ticker": "ANET",
@@ -191,6 +225,23 @@
       "score": 5
     },
     {
+      "ticker": "PLTR",
+      "exchange": "NASDAQ",
+      "title": "Palantir: Wave 4 Complete or One Final Shakeout?",
+      "author": "S_Sangwan",
+      "premium": true,
+      "likes": 0,
+      "comments": 0,
+      "is_sp500": false,
+      "is_hot": true,
+      "editors_pick": false,
+      "summary": "\ud83d\ude80 Palantir: Wave 4 Complete or One Final Shakeout Before Liftoff?  Palantir remains one of the strongest long-term charts in the market, but the key question is",
+      "chart_url": "https://www.tradingview.com/chart/PLTR/kGiF0ivT-Palantir-Wave-4-Complete-or-One-Final-Shakeout/",
+      "image": "https://s3.tradingview.com/k/kGiF0ivT_mid.webp",
+      "created_at": "2026-11-27T23:52:57+00:00",
+      "score": 5
+    },
+    {
       "ticker": "MA",
       "exchange": "NYSE",
       "title": "Mastercard(MA) Breaks Trendline as Holiday Spend Beckons",
@@ -206,23 +257,6 @@
       "image": "https://s3.tradingview.com/t/tIqFRF2S_mid.webp",
       "created_at": "2026-11-26T11:47:19+00:00",
       "score": 4
-    },
-    {
-      "ticker": "MSTR",
-      "exchange": "NASDAQ",
-      "title": "MSTR-parking my Longs",
-      "author": "marius666",
-      "premium": false,
-      "likes": 1,
-      "comments": 0,
-      "is_sp500": false,
-      "is_hot": true,
-      "editors_pick": false,
-      "summary": "NASDAQ:MSTR  Lots of confluence around the $56 mark.   * Bottom of a downward-sloping channel.  * ABC move  * RSI support + bullish divergence.  Expecting a bou",
-      "chart_url": "https://www.tradingview.com/chart/MSTR/nOtNzql4-MSTR-parking-my-Longs/",
-      "image": "https://s3.tradingview.com/n/nOtNzql4_mid.webp",
-      "created_at": "2026-11-25T09:20:43+00:00",
-      "score": 1
     }
   ]
 }
